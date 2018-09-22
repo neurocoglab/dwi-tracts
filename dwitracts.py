@@ -1,13 +1,4 @@
 
-# TODO: Add to a new module "dwitracts"
-
-# Compute DWI regressions for single subject
-
-# Uses the average orientation computed above to obtain tract-specific measures of
-# diffusion for each voxel. Voxel-wise regressions are performed to determine how strongly
-# the diffusion profile in each voxel loads (in terms of beta cofficients) onto the average 
-# orientation for a given tract.
-
 import statsmodels.api as sm
 import math
 import nibabel as nib
@@ -18,6 +9,13 @@ import os
 import glob
 import utils
 import shutil
+
+# Compute DWI regressions for single subject
+
+# Uses the average orientation computed above to obtain tract-specific measures of
+# diffusion for each voxel. Voxel-wise regressions are performed to determine how strongly
+# the diffusion profile in each voxel loads (in terms of beta cofficients) onto the average 
+# orientation for a given tract.
 
 def process_regression_dwi( subject, params ):
 
