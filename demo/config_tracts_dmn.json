@@ -1,0 +1,82 @@
+{
+"general": 	
+	{
+	"source_dir": 		"/Volumes/AndrewElements/data/",
+	"project_dir": 		"nki",
+	"deriv_dir": 		"derivatives",
+	"prefix": 			"sub-",
+	"sub_dirs": 		"ses-DS2",
+	"rois_dir": 		"rois",
+	"rois_list": 		"dmn.rois",
+	"network_name": 	"dmn",
+	"subjects_file": 	"subjects_ptx_done.list",
+	"dwi_dir": 			"dwi",
+	"tracts_dir":		"tract_stats",
+	"output_dir": 		"tracts",
+	"temp_dir": 		"/tmp/dwi",
+	"preproc_config": 	"config_dmn.json",
+	"clobber": 			false,
+	"verbose": 			true,
+	"debug":			true
+	},
+"average_tracts":
+	{
+	"fwhm": 			3.5,
+	"bin_thres":	 	0
+	},
+"gaussians":
+	{
+	"threshold": 		0.2,
+	"fwhm_axial": 		10,
+	"fwhm_radial": 		4,
+	"gauss_max_radius":	8,
+	"max_seg_length": 	4,
+	"max_seg_angle": 	0.33333,
+	"tract_thresh":		10E-6,
+	"fail_constraints": false
+	},
+"average_directions":
+	{
+	"force_compute": 	true,
+	"threshold": 		0.2
+	},
+"tract_metrics":
+	{
+	"threshold": 		0.2,
+	"weighted_avr": 	true,
+	"metric": 			"FA",
+	"xfm": 				true,
+	"force_compute": 	false,
+	"weighted": 		true
+	},
+"dwi_regressions":
+	{
+	"fsl_root":			"/usr/local/fsl",
+	"force_compute": 	true,
+	"force_regress": 	true,
+	"covariates_file":  "tract_covariates.csv",
+	"threshold": 		0.0,
+	"regress_dir":		"regress_dwi",
+	"beta_min": 		-1,
+	"beta_max": 		1,
+	"beta_norm": 		false,
+	"write_stats": 		false,
+	"retain_dwi": 		false,
+	"beta_sm_fwhm": 	1.5,
+	"fa_img": 			"dti_FA",
+	"standard_img": 	"Mean3G",
+	"mask": 			"Mean3G",
+	"fail_on_error": 	false,
+	"qsub_config": 
+		{
+		"use_qsub":			false,
+		"walltime": 		"10:00:00",
+		"select": 			1,
+		"ncpus": 			1,
+		"mem": 				"9gb",
+		"project_id": 		"HPCA-03714-IFR",
+		"temp_dir": 		"tmp",
+		"output_dir":   	"covariates"
+		}
+	}
+}
