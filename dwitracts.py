@@ -1,4 +1,13 @@
 
+# TODO: Add to a new module "dwitracts"
+
+# Compute DWI regressions for single subject
+
+# Uses the average orientation computed above to obtain tract-specific measures of
+# diffusion for each voxel. Voxel-wise regressions are performed to determine how strongly
+# the diffusion profile in each voxel loads (in terms of beta cofficients) onto the average 
+# orientation for a given tract.
+
 import statsmodels.api as sm
 import math
 import nibabel as nib
@@ -9,13 +18,6 @@ import os
 import glob
 import utils
 import shutil
-
-# Compute DWI regressions for single subject
-
-# Uses the average orientation computed above to obtain tract-specific measures of
-# diffusion for each voxel. Voxel-wise regressions are performed to determine how strongly
-# the diffusion profile in each voxel loads (in terms of beta cofficients) onto the average 
-# orientation for a given tract.
 
 def process_regression_dwi( subject, params ):
 
@@ -251,7 +253,7 @@ def process_regression_dwi( subject, params ):
                         yy   = dwi_d[vv,:] / b0
                         bb   = b_d
                         dd   = diff_d[vv]
-                        vv_d = v_d[vv,:]
+#                         vv_d = v_d[vv,:]
                         xTv  = np.matmul(v_d[vv,:],x_d.T)
                         xx   = np.exp(-(((bb*dd) * xTv)**2))
                         xx   = sm.add_constant(xx, has_constant='add')
@@ -297,8 +299,8 @@ def process_regression_dwi( subject, params ):
                 for stat in stats:
                 
                     # Warp back to standard space
-                    smooth_file = '{0}/{1}_mni_sm_{2:1.2f}mm_{3}.nii.gz' \
-                                  .format(subj_output_dir, stat, params_regress['beta_sm_fwhm'], tract_name)
+                    smooth_file = '{0}/{1}_mni_sm_{2}um_{3}.nii.gz' \
+                                  .format(subj_output_dir, stat, int(1000.0*params_regress['beta_sm_fwhm']), tract_name)
                     cmd = '{0} -i {1} -o {2} -r {3} -w {4}' \
                           .format(fsl_applywarp, dwi_files[stat], mni_files[stat], standard_img, invwarp_file)
                     err = utils.run_fsl(cmd)
@@ -312,7 +314,7 @@ def process_regression_dwi( subject, params ):
                         success = False
 
                     if success:
-                        cmd = '{0} {1} -kernel gauss {2:1.5f} -fmean {3}' \
+                        cmd = '{0} {1} -kernel gauss {2} -fmean {3}' \
                               .format(fsl_maths, mni_files[stat], params_regress['beta_sm_fwhm']/2.1231, smooth_file)
                         err = utils.run_fsl(cmd)
                         if err:
