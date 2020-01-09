@@ -153,18 +153,67 @@ def smooth_volume(volume, V_img, fwhm):
 #
 # polyline:        Nx3 numpy array representing coordinates of the polyline vertices
 # filename:        Full path to the file location at which to save this polyline
+# name:            Name for the polyline
+# data:            NxM numpy array of vertex data columns
 #
 
-def write_polyline_mgui(polyline, filename, name=''):
+def write_polyline_mgui(polyline, filename, name='', data=None, data_names=None):
     
     if len(name) == 0:
         name = filename
+        
+    M = 0
     
+    if data is not None:
+        M = 1
+        if len(data.shape) > 1:
+            M = data.shape[1]
+        if M == 1:
+            data_names = [data_names];
+    row = 0
     with open(filename, 'w') as writer:
         N = polyline.shape[0]
-        writer.write('1\n{0} 0 {1}\n'.format(N, name))
+        writer.write('1\n{0} 0 {1}'.format(N, name))
+        for i in range(0,M):
+            writer.write(' {0}'.format(data_names[i]))
+        writer.write('\n');
+        
         for i in range(0, N):
-            writer.write('{0:1.6f} {1:1.6f} {2:1.6f}\n'.format(polyline[i,0], polyline[i,1], polyline[i,2]))
+            writer.write('{0:1.6f} {1:1.6f} {2:1.6f}'.format(polyline[i,0], polyline[i,1], polyline[i,2]))
+            if M == 1:
+                writer.write(' {0:1.6f}'.format(data[row]))
+            else:
+                for i in range(0,M):
+                    writer.write(' {0:1.6f}'.format(data[row,i]))
+            writer.write('\n');
+        row += 1                     
+                
+    
+# Writes a polyline from a ModelGUI poly3d format file
+#
+
+def read_polyline_mgui(filename):
+    
+    polyline = None
+    
+    with open(filename, 'r') as reader:
+        reader.readline()
+        line = reader.readline().rstrip()
+        parts = line.split()
+        N = int(parts[0])
+        
+        polyline = np.zeros((N,3))
+        i = 0
+        line = reader.readline()
+        while line:
+            parts = line.rstrip().split()
+            polyline[i,0] = float(parts[0]);
+            polyline[i,1] = float(parts[1]);
+            polyline[i,2] = float(parts[2]);
+            i += 1
+            line = reader.readline()
+        
+    return polyline
     
 
 # Flips all vectors whose major axis (component with maximal magnitude) is negative
