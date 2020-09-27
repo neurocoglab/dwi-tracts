@@ -1,0 +1,49 @@
+{
+"general":
+   {
+    "preproc_config_file":   "project/config_preprocess.json",
+    "tracts_config_file":    "project/config_tracts_dmn.json",
+    "covariates_file":       "data/nki/metadata/nki_demos.csv",
+    "standardized_beta":     false,
+    "glm_output_dir":        "glms",
+    "tract_threshold":       0.5,
+    "snet_output_dir":       "snet",
+    "summary_metric":        "max",
+    "min_clust":             3,
+    "fdr_alpha":             0.05,
+    "fdr_method":            "fdr_tsbky",
+    "nan_value":             0,
+    "clobber":               false,
+    "dryrun":                false,
+    "verbose":               true
+   },
+"glm":
+   {
+   "glm-age-sex":
+      {
+      "factors":
+            [
+            "Age",
+            "Sex",
+            "Age*Sex"
+            ],
+      "categorical":
+            {
+            "Age":     false,
+            "Sex":     true,
+            "Age*Sex": false
+            },
+      "levels":
+            {
+            "Sex":
+                {
+                 "Male": 1,
+                 "Female": 2
+                }
+            },
+      "intercept":          true,
+      "tract_thres":        0.4,
+      "outlier_z":          3.5
+      }
+   }
+}

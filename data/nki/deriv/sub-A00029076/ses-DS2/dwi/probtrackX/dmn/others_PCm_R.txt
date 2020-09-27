@@ -1,0 +1,10 @@
+/home/lpzatr/data/rois/dmn/ACC_L.nii
+/home/lpzatr/data/rois/dmn/IPL_L.nii
+/home/lpzatr/data/rois/dmn/IPL_R.nii
+/home/lpzatr/data/rois/dmn/LOC_L.nii
+/home/lpzatr/data/rois/dmn/LOC_R.nii
+/home/lpzatr/data/rois/dmn/PCG_L.nii
+/home/lpzatr/data/rois/dmn/PCG_R.nii
+/home/lpzatr/data/rois/dmn/PCm_L.nii
+/home/lpzatr/data/rois/dmn/PFCm_L.nii
+/home/lpzatr/data/rois/dmn/PFCm_R.nii

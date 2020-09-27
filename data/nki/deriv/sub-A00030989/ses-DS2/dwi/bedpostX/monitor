@@ -1,0 +1,43 @@
+#!/bin/sh
+echo
+echo "----- Bedpostx Monitor -----"
+finished=0
+lastprinted=0
+havedad=2
+while [ $finished -eq 0 ] ; do
+    nfin=0
+    slice=0
+    errorFiles=`ls /home/lpzatr/data/nki/derivatives/sub-A00030989/ses-DS2/dwi.bedpostX/logs/*.e* 2> /dev/null `
+    for errorFile in $errorFiles
+    do
+        if [ -s $errorFile ]; then
+            echo An error ocurred. Please check file $errorFile
+            kill -9 80565
+            exit 1
+        fi
+    done
+    while [ $slice -le 64  ];do
+        if [ -e /home/lpzatr/data/nki/derivatives/sub-A00030989/ses-DS2/dwi.bedpostX/logs/monitor/$slice ]; then
+            nfin=$(($nfin + 1))
+        fi
+        slice=$(($slice + 1))
+    done
+    newmessages=$(($nfin - $lastprinted))
+    while [ "$newmessages" -gt 0 ];do
+        lastprinted=$(($lastprinted + 1))
+        echo $lastprinted slices processed out of 64 
+        newmessages=$(($newmessages - 1))
+    done
+    if [ -f /home/lpzatr/data/nki/derivatives/sub-A00030989/ses-DS2/dwi.bedpostX/xfms/eye.mat ] ; then
+        finished=1
+        echo "All slices processed"
+	exit 
+    fi
+    if [ ! $havedad -gt 0 ]; then
+       exit 0
+    fi
+    if [ "x" = "x" ]; then
+        havedad=`ps -e -o pid 2>&1 | grep "80565\b" | wc -l`        
+    fi
+    sleep 180;
+done

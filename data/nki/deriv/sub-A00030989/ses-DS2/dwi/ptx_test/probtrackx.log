@@ -1,0 +1,3 @@
+/usr/local/fsl/bin/probtrackx2 -x /Volumes/AndrewElements/data/rois/what-where/IPL_L_gwfa.nii -l --onewaycondition -c 0.2 -S 2000 --steplength=0.5 -P 5000 --fibthresh=0.01 --distthresh=0.0 --sampvox=0.0 --xfm=/Volumes/AndrewElements/data/nki/derivatives/sub-A00030989/ses-DS2/dwi/reg3G/Mean3G_warp2FA.nii.gz --invxfm=/Volumes/AndrewElements/data/nki/derivatives/sub-A00030989/ses-DS2/dwi/reg3G/FA_warp2Mean3G.nii.gz --forcedir --opd -s /Volumes/AndrewElements/data/nki/derivatives/sub-A00030989/ses-DS2/dwi/bedpostX/merged -m /Volumes/AndrewElements/data/nki/derivatives/sub-A00030989/ses-DS2/dwi/bedpostX/nodif_brain_mask --dir=/Volumes/AndrewElements/data/nki/derivatives/sub-A00030989/ses-DS2/dwi/ptx_test 
+---------------------------------------------
+
