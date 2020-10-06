@@ -102,7 +102,7 @@ class DwiTractsGlm:
                     x = self.subject_data[factor].values
                     vals = np.unique(x) # Return value is sorted; lower value is assigned -1, higher +1
                     if len(vals) != 2:
-                        print('Factor {0} has {1} levels. Can only have two.'.format(factor, len(vals)))
+                        print('Factor {0} has {1} levels. Can only have two.')
                         assert False
                     # Encode as -1, 1
                     xx = x.copy()

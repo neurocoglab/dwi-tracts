@@ -13,6 +13,170 @@ import matplotlib.pylab as plt
 import pandas as pd
 from tqdm import tnrange, tqdm_notebook, tqdm
 from . import utils
+import math
+
+# Generates TSA histograms across all subjects and tracts; 
+# as well individual histograms for each tract.
+#
+# params:               Plotting parameters
+# tract_name:           Tract for which to obtain TSA values
+# threshold:            Tract threshold (only return voxels where V_tract>threshold)
+# verbose:              Whether to print messages to the console
+#
+# returns:              Pandas DataFrame object, containing means & standard deviations
+#                        for each tract, and over all tracts
+def plot_tsa_histograms( params, my_dwi, tract_names=None, threshold=0.5, verbose=False, clobber=False ):
+    
+    sns.set(style="white", palette="muted", color_codes=True)
+    plot_face_clr = [1,1,1]
+    
+    if tract_names is None:
+        # Use all valid tracts
+        tract_names = my_dwi.tracts_final_bidir
+     
+    figures_dir = '{0}/figures'.format(my_dwi.tracts_dir)
+    if not os.path.isdir(figures_dir):
+        shutil.os.makedirs(figures_dir)
+    
+    X = np.zeros((len(my_dwi.subjects),0))
+    counts = np.zeros(len(tract_names))
+    
+    network_name = my_dwi.params['general']['network_name']
+    
+    color = None
+    if 'color' in params:
+        color = params['color']
+    
+    N_t = len(tract_names)
+    N_col = math.ceil(math.sqrt(N_t))
+    N_col = 6
+    
+    # Set font display parameters
+    plt.rc('axes', titlesize=params['axis_font']*2) 
+    plt.rc('axes', labelsize=params['axis_font']*3)
+    plt.rc('figure', titlesize=params['title_font'])
+    plt.rc('xtick', labelsize=params['ticklabel_font']*2.5)
+    
+    N_roi = len(my_dwi.rois)
+    N_itr = int(N_roi*(N_roi-1)/2)
+    
+    rois = []
+    for i in range(0,N_roi-1):
+        for j in range(i,N_roi):
+            tract = '{0}_{1}'.format(my_dwi.rois[i], my_dwi.rois[j])
+            if tract in tract_names:
+                if not my_dwi.rois[i] in rois:
+                    rois.append(my_dwi.rois[i])
+                if not my_dwi.rois[j] in rois:
+                    rois.append(my_dwi.rois[j]) 
+    
+    rois.sort()
+    N_roi = len(rois)
+    
+    tracts = []
+    ii = []
+    jj = []
+    for i in range(0,N_roi-1):
+        for j in range(i+1,N_roi):
+            tract = '{0}_{1}'.format(rois[i], rois[j])
+            if tract in tract_names:
+                tracts.append(tract)
+                ii.append(i)
+                jj.append(j)
+
+    fig, ax = plt.subplots(N_roi-1, N_roi, sharex=True, figsize=params['dimensions_tracts'])
+    
+    for i in range(0, N_roi-1):
+        for j in range(0,N_roi):
+            tract = '{0}_{1}'.format(rois[i], rois[j])
+            i2 = N_roi-i-2
+            j2 = N_roi-j-1
+            
+            if 'xlim' in params:
+                plt.xlim(params['xlim'])
+            if 'xticks' in params:
+                ax[i2,j2].get_xaxis().set_ticks(params['xticks'])
+            ax[i2,j2].get_yaxis().set_ticks([])
+            ax[i2,j2].set_ylabel('')
+            if not tract in tracts:
+                ax[i2,j2].axis('off')
+                
+    means = np.zeros(len(tracts)+1)
+    stds = np.zeros(len(tracts)+1)
+    
+    for k in tqdm_notebook(range(0,len(tracts)), 'Generating histograms'):
+        
+        tract = tracts[k]
+        i = N_roi-ii[k]-2
+        j = N_roi-jj[k]-1
+        
+        # Plot histogram for this tract
+        tsa_vals = my_dwi.get_tsa_values( tract, threshold, verbose=verbose )
+        means[k] = np.mean(tsa_vals.flatten())
+        stds[k] = np.std(tsa_vals.flatten())
+        X = np.append(X, tsa_vals, axis=1)
+        
+        ax[i,j].axis('on')
+
+        df = pd.DataFrame(data={'TSA': tsa_vals.flatten()})
+        if params['kde']:
+            sns.kdeplot(tsa_vals.flatten(), ax=ax[i,j], fill=True, color=color)
+        else:
+            sns.histplot(df, x="TSA", ax=ax[i,j], bins=params['num_bins'], stat=params['stat'], color=color)
+            
+        if params['show_labels']:
+            ax[i,j].set_title(tract)
+                
+        if verbose:
+            print( ' Done tract {0}'.format(tract) )
+
+    means[len(tracts)] = np.mean(X.flatten())
+    stds[len(tracts)] = np.std(X.flatten())
+    tracts.insert(0, 'all')
+            
+    # Set stats as pandas data frame
+    df_stats = pd.DataFrame({'Tract': tracts, 'Mean': means, 'Std': stds}) 
+        
+    # Save histograms for each tract
+    dpi = 300
+    if 'dpi_tracts' in params:
+        dpi = params['dpi_tracts']
+    output_file = '{0}/histogram_tsa_{1}_tracts.png'.format( figures_dir, network_name )
+    plt.savefig( output_file, facecolor=plot_face_clr, transparent=True, dpi=dpi )
+    plt.close()
+        
+    # Plot histogram for all tracts
+     # Set font display parameters
+    plt.rc('axes', titlesize=params['axis_font']) 
+    plt.rc('axes', labelsize=params['axis_font'])
+    plt.rc('figure', titlesize=params['title_font'])
+    plt.rc('xtick', labelsize=params['ticklabel_font'])
+    plt.rc('ytick', labelsize=params['ticklabel_font'])
+    
+    fig = plt.figure(figsize=params['dimensions_all'])
+
+    df = pd.DataFrame(data={'TSA': X.flatten()})
+    if params['kde']:
+        sns.displot(df, x="TSA", kind='kde', fill=True, color=color)
+    else:
+        sns.displot(df, x="TSA", bins=params['num_bins'], stat=params['stat'], color=color)
+
+    if params['show_title']:
+        fig.suptitle('Histograms - All Tracts ({0})'.format(network_name))
+
+    output_file = '{0}/histogram_tsa_{1}_all.png'.format( figures_dir, network_name )
+    
+    dpi = 300
+    if 'dpi_all' in params:
+        dpi = params['dpi_all']
+    plt.savefig( output_file, facecolor=plot_face_clr, transparent=True, dpi=dpi )
+    plt.close()
+
+    if verbose:
+        print(' Generated histograms in {0}.'.format(figures_dir)) 
+        
+    return df_stats
+
 
 # Plot distance-wise t-values as a set of horizontal lines
 #

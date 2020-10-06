@@ -141,8 +141,29 @@ class DwiTracts:
         self.V_img = V_img
         self.roi_suffix = roi_suffix
         
+        tracts = self.get_final_bidirs()
+        if len(tracts) > 0:
+            self.tracts_final_bidir = tracts
+        
         self.is_init = True
         return True
+        
+        
+    def get_final_bidirs( self ):
+        
+        tracts = []
+        N_roi = len(self.rois)
+        
+        for a in range(0, N_roi-1):
+            roi_a = self.rois[a]
+            for b in range(a+1, N_roi):
+                roi_b = self.rois[b]
+                tract_name = '{0}_{1}'.format(roi_a, roi_b)
+                test = '{0}/tract_final_bidir_{1}.nii.gz'.format(self.final_dir, tract_name)
+                if os.path.isfile(test):
+                    tracts.append(tract_name)
+                    
+        return tracts
         
         
     # Compute average bidirectional tract distributions based upon 
@@ -276,13 +297,7 @@ class DwiTracts:
 
         # Create directories
         params_gauss = self.params['gaussians']
-#         sigma_axial = params_gauss['fwhm_axial'] / (2.0*math.sqrt(2.0*math.log(2.0)))
-#         sigma_radial = params_gauss['fwhm_radial'] / (2.0*math.sqrt(2.0*math.log(2.0)))
-#         max_seg_length = params_gauss['max_seg_length']
-#         gauss_max_radius = params_gauss['gauss_max_radius']
-#         tract_thresh = params_gauss['tract_thresh']
-        
-        threshold = self.params['average_tracts']['bin_thres']
+        threshold = params_gauss['threshold']
         seed_dilate = params_gauss['seed_dilate']
 
         V_rois = {}
@@ -781,6 +796,8 @@ class DwiTracts:
                 rois_a.append(roi_a)
                 rois_b.append(roi_b)
 
+        self.tracts_final_bidir = []
+                
         for a in tqdm_notebook(range(0, N_roi-1), desc="Progress"):
             roi_a = self.rois[a]
             for b in range(a+1, N_roi):
@@ -811,9 +828,17 @@ class DwiTracts:
                         V_blobs = utils.retain_adjacent_blobs(V_blobs, [V_rois[roi_a], V_rois[roi_b]])
                         if len(np.unique(V_blobs)) > 2:
                             print('  * Tract has multiple tract segments (unfixed): {0}|{1}'.format(roi_a, roi_b))
-                        else:
+                        elif len(np.unique(V_blobs)) == 1:
                             print('  * Tract had multiple tract segments (1 retained): {0}|{1}'.format(roi_a, roi_b))
+                        else:
+                            print('  * Tract had multiple tract segments (none retained): {0}|{1}'.format(roi_a, roi_b))
                         V = np.multiply(V, V_blobs>0)
+                        
+                    # If after all this we have no tract, fail here
+                    if not np.any(V.flatten()):
+                        if verbose:
+                            print(' Tract {0} failed.'.format(ab))
+                        continue
 
                     img = nib.Nifti1Image(V, self.V_img.affine, self.V_img.header)
                     nib.save(img, '{0}/tract_final_bidir_{1}.nii.gz'.format(self.final_dir, ab))
@@ -844,6 +869,8 @@ class DwiTracts:
 
                     img = nib.Nifti1Image(V, self.V_img.affine, self.V_img.header)
                     nib.save(img, '{0}/tract_final_norm_bidir_{1}.nii.gz'.format(self.final_dir, ab))
+                    
+                    self.tracts_final_bidir.append(ab)
 
                     if verbose:
                         print('  Wrote average bidirectional tract for {0}/{1}'.format(roi_a, roi_b))
@@ -880,14 +907,12 @@ class DwiTracts:
             for b in range(a+1, N_roi):
                 roi_b = self.rois[b]
                 tract_name = '{0}_{1}'.format(roi_a, roi_b)
-                test = '{0}/tract_final_bidir_{1}.nii.gz'.format(self.final_dir, tract_name)
-                if os.path.isfile(test):
+#                 test = '{0}/tract_final_bidir_{1}.nii.gz'.format(self.final_dir, tract_name)
+#                 if os.path.isfile(test):
+                if tract_name in self.tracts_final_bidir:
                     A[a,b] = 1
                     A[b,a] = 1
-#                 else:
-#                     A[a,b] = -1
-#                     A[b,a] = -1
-    
+
         output_file = '{0}/pass_fail.net'.format(self.tracts_dir)
         utils.write_matrix_to_pajek( A, output_file, directed=False, thres_low=-1, labels=self.rois, coords=roi_centers )
         
@@ -1041,7 +1066,47 @@ class DwiTracts:
         
         return True
         
+        
+    # Returns TSA values for all subjects, for a given tract
+    #
+    # tract_name:           Tract for which to obtain TSA values
+    # threshold:            Tract threshold (only return voxels where V_tract>threshold)
+    # verbose:              Whether to print messages to the console
+    #
+    # returns:              NxV numpy array, where N is # subjects and V is # voxels
+    def get_tsa_values( self, tract_name, threshold=0.5, verbose=False ):
+       
+        params_gen = self.params['general']
+        params_regress = self.params['dwi_regressions']
+                
+        dist_file = '{0}/dist/tract_dist_bidir_{1}.nii.gz'.format(self.tracts_dir, tract_name)
+        tract_file = '{0}/final/tract_final_bidir_{1}.nii.gz'.format(self.tracts_dir, tract_name)
+        V_img = nib.load(dist_file)
+        V_dist = np.round(V_img.get_fdata().flatten())
+        V_tract = nib.load(tract_file).get_fdata().flatten()
 
+        idx_tract = np.flatnonzero(V_tract > threshold)
+        V_dist = V_dist[idx_tract]
+
+        N_sub = len(self.subjects)
+
+        V_betas = np.zeros((N_sub, idx_tract.size))
+        # Get betas for each subject
+        for subject, i in zip(self.subjects, range(0,N_sub)):
+            prefix_sub = '{0}{1}'.format(params_gen['prefix'], subject)
+            subject_dir = os.path.join(self.project_dir, params_gen['deriv_dir'], prefix_sub, \
+                                       params_gen['sub_dirs'])
+            subj_output_dir = '{0}/dwi/{1}/{2}'.format(subject_dir, params_regress['regress_dir'], \
+                                                       params_gen['network_name'])
+            beta_file = '{0}/betas_mni_sm_{1}um_{2}.nii.gz' \
+                                  .format(subj_output_dir, int(1000.0*params_regress['beta_sm_fwhm']), tract_name)
+
+            V_sub = nib.load(beta_file).get_fdata()
+            V_betas[i,:] = V_sub.ravel()[idx_tract]
+            
+        return V_betas
+
+    
 # Compute DWI regressions for a single subject
 #
 # Uses average streamline orientations to obtain tract-specific anisotropy (TSA) measures 
@@ -1084,55 +1149,55 @@ def process_tsa_subject( subject, my_dwi, verbose=False, debug=False ):
     standard_img = 'utils/{0}'.format(params_regress['standard_img'])
 
     # Get ROIs and targets
-    tract_names = []
-    tract_files = []
-    rois_a = []
-    rois_b = []
+    tract_names = my_dwi.tracts_final_bidir
+#     tract_files = []
+#     rois_a = []
+#     rois_b = []
 
-    # Read ROI list
-    rois = []
-    target_rois = {}
+#     # Read ROI list
+#     rois = []
+#     target_rois = {}
     
-    # If this is a JSON file, read as networks and targets
-    if params_ptx['roi_list'].endswith('.json'):
-        with open(params_ptx['roi_list'], 'r') as myfile:
-            json_string=myfile.read()
+#     # If this is a JSON file, read as networks and targets
+#     if params_ptx['roi_list'].endswith('.json'):
+#         with open(params_ptx['roi_list'], 'r') as myfile:
+#             json_string=myfile.read()
 
-        netconfig = json.loads(json_string)
-        networks = netconfig['networks']
-        targets = netconfig['targets']
+#         netconfig = json.loads(json_string)
+#         networks = netconfig['networks']
+#         targets = netconfig['targets']
 
-        for net in networks:
-            others = []
-            for net2 in targets[net]:
-                others = others + networks[net2]
-            for roi in networks[net]:
-                rois.append(roi)
-                target_rois[roi] = others
-    else:
-        with open(params_gen['rois_list'],'r') as roi_file:
-            reader = csv.reader(roi_file)
-            for row in reader:
-                rois.append(row[0])
+#         for net in networks:
+#             others = []
+#             for net2 in targets[net]:
+#                 others = others + networks[net2]
+#             for roi in networks[net]:
+#                 rois.append(roi)
+#                 target_rois[roi] = others
+#     else:
+#         with open(params_gen['rois_list'],'r') as roi_file:
+#             reader = csv.reader(roi_file)
+#             for row in reader:
+#                 rois.append(row[0])
         
-        # All ROIs are targets
-        for a in range(0, len(rois)-1):
-            roi_a = rois[a]
-            targets = []
-            for b in range(a+1, len(rois)):
-                roi_b = rois[b]
-                targets.append(roi_b)
-            target_rois[roi_a] = targets
+#         # All ROIs are targets
+#         for a in range(0, len(rois)-1):
+#             roi_a = rois[a]
+#             targets = []
+#             for b in range(a+1, len(rois)):
+#                 roi_b = rois[b]
+#                 targets.append(roi_b)
+#             target_rois[roi_a] = targets
     
-    for a in range(0, len(rois)-1):
-        roi_a = rois[a]
-        for roi_b in target_rois[roi_a]:
-            tract_name = '{0}_{1}'.format(roi_a,roi_b)
-            tract_names.append(tract_name)
-            tract_file = '{0}/tract_final_bidir_{1}.nii.gz'.format(my_dwi.final_dir, tract_name)
-            tract_files.append(tract_file)
-            rois_a.append(roi_a)
-            rois_b.append(roi_b)
+#     for a in range(0, len(rois)-1):
+#         roi_a = rois[a]
+#         for roi_b in target_rois[roi_a]:
+#             tract_name = '{0}_{1}'.format(roi_a,roi_b)
+#             tract_names.append(tract_name)
+#             tract_file = '{0}/tract_final_bidir_{1}.nii.gz'.format(my_dwi.final_dir, tract_name)
+#             tract_files.append(tract_file)
+#             rois_a.append(roi_a)
+#             rois_b.append(roi_b)
 
     prefix_sub = '{0}{1}'.format(params_gen['prefix'], subject)
     subject_dir = os.path.join(my_dwi.project_dir, params_gen['deriv_dir'], prefix_sub, params_gen['sub_dirs'])
