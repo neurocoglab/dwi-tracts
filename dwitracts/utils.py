@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import rft1d
 import nibabel as nib
 from nilearn import image
 import subprocess
@@ -225,19 +226,38 @@ def read_polyline_mgui(filename):
 
 def make_vectors_positive( V_vect ):
     
-    amax = np.amax(np.abs(V_vect),axis=3)
-    idxmax = np.argmax(np.abs(V_vect),axis=3)
-    idx = np.nonzero(amax)
-    x = idxmax[idx]
-    idx2 = idx + (x,)
-    mxs = V_vect[idx2]
-    isneg = np.less(mxs,0)
-    idx3=np.transpose(idx)
-    idx3 = idx3[isneg,:]
+    if V_vect.ndim == 4:
+        amax = np.amax(np.abs(V_vect),axis=3)
+        idxmax = np.argmax(np.abs(V_vect),axis=3)
+        idx = np.nonzero(amax)
+        x = idxmax[idx]
+        idx2 = idx + (x,)
+        mxs = V_vect[idx2]
+        isneg = np.less(mxs,0)
+        idx3=np.transpose(idx)
+        idx3 = idx3[isneg,:]
 
-    V_vect[idx3[:,0],idx3[:,1],idx3[:,2],:]=-V_vect[idx3[:,0],idx3[:,1],idx3[:,2],:]
+        V_vect[idx3[:,0],idx3[:,1],idx3[:,2],:]=-V_vect[idx3[:,0],idx3[:,1],idx3[:,2],:]
+
+        return V_vect
     
-    return V_vect
+    if V_vect.ndim == 2:
+        amax = np.amax(np.abs(V_vect),axis=1)
+        idxmax = np.argmax(np.abs(V_vect),axis=1)
+        idx = np.nonzero(amax)
+        x = idxmax[idx]
+        idx2 = idx + (x,)
+        mxs = V_vect[idx2]
+        isneg = np.less(mxs,0)
+        idx3=np.transpose(idx)
+        idx3 = idx3[isneg,:]
+
+        V_vect[idx3,:]=-V_vect[idx3,:]
+
+        
+        return V_vect
+    
+    assert False
 
 
 # Detects disconnected blobs in a binary (thresholded) image, and labels each with
@@ -431,37 +451,38 @@ def write_matrix_to_pajek( M, path, weighted=True, thres_low=0, thres_high=float
                             fout.write(' {0:1.8f}'.format(value))
 
 # Find clusters in tvals [Nx1], where abs(tvals) > thres,
-# and labels them with integers. 
+# and labels them with integers. Separate clusters are created for positive
+# and negative t-values
 #
 # min_clust:     The minimal width at which to accept a cluster
 #
 # Returns an array of integers [Nx1] as cluster labels
 
-def get_clusters( tvals, thres, min_clust=0 ):
+# def get_tvalue_clusters( tvals, thres, min_clust=0 ):
 
-    clusters = np.zeros(tvals.size, dtype=int)
-    i = 0;
-    c = 1;
-    in_cluster = False;
+#     clusters = np.zeros(tvals.size, dtype=int)
+#     i = 0;
+#     c = 1;
+#     in_cluster = False;
 
-    while i < tvals.size:
-        isclus = tvals[i] > thres
-        if in_cluster:
-            if isclus:
-                clusters[i] = c
-            else:
-                in_cluster = False
-                if np.count_nonzero(clusters==c) < min_clust:
-                    clusters[clusters==c] = 0
-                else:
-                    c += 1
-        else:
-            if isclus:
-                clusters[i] = c
-                in_cluster = True
-        i += 1
+#     while i < tvals.size:
+#         isclus = tvals[i] > thres
+#         if in_cluster:
+#             if isclus:
+#                 clusters[i] = c
+#             else:
+#                 in_cluster = False
+#                 if np.count_nonzero(clusters==c) < min_clust:
+#                     clusters[clusters==c] = 0
+#                 else:
+#                     c += 1
+#         else:
+#             if isclus:
+#                 clusters[i] = c
+#                 in_cluster = True
+#         i += 1
 
-    return clusters
+#     return clusters
 
 # Aggregates all ROI volumes into a single volume file
 #
@@ -539,3 +560,172 @@ def compute_roi_centers( rois_dir, rois, output_file, extension='nii', verbose=F
     return roi_centers
 
     
+    
+# Identify and label clusters in a set of t-values and associated p-values
+#
+# pvals         N x 1 vector of p-values
+# tvals         N x 1 vector of t-values
+# alpha         cluster-forming threshold
+# min_clust     the minimal cluster size [default=1]
+#
+def get_clusters( pvals, tvals, alpha, min_clust=1 ):
+
+#     print('Min cluster size: {0}'.format(min_clust))
+    N_nodes = tvals.size
+
+    clusters = np.zeros(N_nodes, dtype=int)
+    c = 1
+    in_clust = False
+    is_pos = False
+    csize = 0
+
+    for i in range(0, N_nodes):
+        if pvals[i] < alpha:
+            if tvals[i] > 0:
+                if in_clust and not is_pos:
+                    # Switched sign within cluster;
+                    # requires new cluster
+                    if csize < min_clust:
+                        # Do not keep if less than min_clust
+                        clusters[clusters==c] = 0
+                    else:
+#                         print(1, c, csize, clusters)
+                        c += 1
+                    csize = 0
+
+                clusters[i] = c
+                in_clust = True
+                is_pos = True
+                csize += 1
+            elif tvals[i] < 0:
+                if in_clust and is_pos:
+                    # Switched sign within cluster;
+                    # requires new cluster
+                    if csize < min_clust:
+                        # Do not keep if less than min_clust
+                        clusters[clusters==c] = 0
+                    else:
+#                         print(2, c, csize, clusters)
+                        c += 1
+                    csize = 0
+
+                clusters[i] = c
+                in_clust = True
+                is_pos = False
+                csize += 1
+        else:
+            if in_clust:
+                if csize < min_clust:
+                    clusters[clusters==c] = 0
+                else:
+#                     print(3, c, csize, min_clust, clusters)
+                    c += 1
+                csize = 0
+            in_clust = False
+          
+    return clusters
+
+# Identify and label clusters in a set of t-values using 1-dimensional
+# random field theory
+def get_tvalue_rft1d_clusters( tvals, alpha, df, fwhm, min_clust ):
+
+    tvals_abs = np.abs(tvals)
+    t_max = np.max(tvals_abs)
+    N_nodes = tvals.size
+    pvals = np.ones(N_nodes)
+    clusters = np.zeros(N_nodes)
+
+    t_star = rft1d.t.isf(alpha, df, N_nodes, fwhm)
+    if t_star < t_max:
+        # Significant main (tract-wise) effect of this factor
+        calc = rft1d.geom.ClusterMetricCalculator()
+        k_nodes = calc.cluster_extents(tvals_abs, t_star, interp=True)
+        k_resels = [kk/fwhm for kk in k_nodes]
+        c = len(k_resels)
+        rftcalc = rft1d.prob.RFTCalculator(STAT='T', df=(1,df), nodes=N_nodes, FWHM=fwhm)
+        k_min = min(k_resels)
+        P_set = rftcalc.p.set(c, k_min, t_star)
+        P_cluster = [rftcalc.p.cluster(kk, t_star) for kk in k_resels]
+        if len(P_cluster) == 1:
+            if np.count_nonzero(tvals_abs>t_star) >= min_clust:
+                pvals[tvals_abs>t_star] = P_cluster
+                clusters = np.zeros(N_nodes)
+                clusters[tvals_abs>t_star] = 1
+        else:
+            clusters = get_clusters(-tvals_abs, tvals, -t_star, min_clust)
+            cvals = np.unique(clusters[clusters>0])
+            for c in cvals:
+                pvals[clusters==c] = P_cluster[c-1]
+
+    return pvals, clusters
+
+
+# Generates a matrix of t-values [N_perm X N_dist] from permutations of V_dist,
+# summarizing the t-values at each distance. Can be used to generate a null
+# distribution of distance-wise t-values.
+# 
+# Parameters:
+#
+#  dists             1D (N_dist) array of distances to process
+#  V_dist            3D (Nx X Ny X Nz) tract distance image
+#  V_tval            3D (Nx X Ny X Nz) t-statistic image
+#  N_perm            Number of permutations
+#  metric            Metric which summarizes t-statistics at a given
+#                    distance
+#  V_pval            Optional, returns p-values for the permutations.
+# 
+# Returns:
+#
+#  A N_perm X N_dist matrix of permuted t-values
+
+def get_permuted_tvals( dists, V_dist, V_tval, N_perm, metric='max', V_pval=None ):
+
+    N_dist = dists.size
+    t_perm = np.zeros((N_perm, N_dist))
+    idx_tract = V_dist > 0
+    V_dist = V_dist[idx_tract].flatten()
+    V_tval = V_tval[idx_tract].flatten()
+    V_pval = V_pval[idx_tract].flatten()
+    V_tval_abs = np.abs(V_tval)
+    if V_pval is not None:
+        p_perm = np.zeros((N_perm, N_dist))
+    else:
+        p_perm = None
+
+    for p in range(0, N_perm):
+        idx_p = np.random.permutation(V_dist.size)
+        V_p = V_dist[idx_p]
+
+        for d, i in zip(dists, range(0,dists.size)):
+            # Summarize stat across voxels at this distance (mean, max, median)
+            idx_d = np.flatnonzero(V_p==d)
+
+            summary_tval = 0
+            if p_perm is not None:
+                summary_pval = 1
+            if idx_d.size > 0:
+                if metric == 'mean':
+                    summary_tval = np.mean(V_tval[idx_d])
+                    if p_perm is not None:
+                        summary_pval = np.mean(V_pval[idx_d])
+
+                elif metric == 'max':
+                    idx_max = idx_d[np.argmax(V_tval_abs[idx_d])]
+                    summary_tval = V_tval[idx_max]
+                    if p_perm is not None:
+                        summary_pval = V_pval[idx_max]
+
+                elif metric == 'median':
+                    summary_tval = np.median(V_tval[idx_d])
+                    if p_perm is not None:
+                        summary_pval = np.median(V_pval[idx_d])
+
+                else:
+                    print('Error: "{0}" is not a valid summary metric'.format(metric))
+                    assert(False)
+                    
+            t_perm[p,i] = summary_tval
+            if p_perm is not None:
+                p_perm[p,i] = summary_pval
+
+    return t_perm, p_perm

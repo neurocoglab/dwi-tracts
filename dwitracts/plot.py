@@ -27,6 +27,9 @@ import math
 #                        for each tract, and over all tracts
 def plot_tsa_histograms( params, my_dwi, tract_names=None, threshold=0.5, verbose=False, clobber=False ):
     
+    if verbose:
+        print('Threshold: {0}'.format(threshold))
+    
     sns.set(style="white", palette="muted", color_codes=True)
     plot_face_clr = [1,1,1]
     
@@ -86,20 +89,23 @@ def plot_tsa_histograms( params, my_dwi, tract_names=None, threshold=0.5, verbos
 
     fig, ax = plt.subplots(N_roi-1, N_roi, sharex=True, figsize=params['dimensions_tracts'])
     
-    for i in range(0, N_roi-1):
-        for j in range(0,N_roi):
+    for i in range(0, N_roi):
+        for j in range(0, N_roi):
             tract = '{0}_{1}'.format(rois[i], rois[j])
             i2 = N_roi-i-2
             j2 = N_roi-j-1
             
             if 'xlim' in params:
                 plt.xlim(params['xlim'])
-            if 'xticks' in params:
-                ax[i2,j2].get_xaxis().set_ticks(params['xticks'])
+#             if j==N_roi-1 and 'xticks' in params:
+#                 ax[i2,j2].get_xaxis().set_ticks(params['xticks'])
+            
+            ax[i2,j2].set_xlabel('')
             ax[i2,j2].get_yaxis().set_ticks([])
             ax[i2,j2].set_ylabel('')
             if not tract in tracts:
                 ax[i2,j2].axis('off')
+                ax[i2,j2].get_xaxis().set_ticks([])
                 
     means = np.zeros(len(tracts)+1)
     stds = np.zeros(len(tracts)+1)
@@ -124,6 +130,7 @@ def plot_tsa_histograms( params, my_dwi, tract_names=None, threshold=0.5, verbos
         else:
             sns.histplot(df, x="TSA", ax=ax[i,j], bins=params['num_bins'], stat=params['stat'], color=color)
             
+        ax[i,j].set_xlabel('')
         if params['show_labels']:
             ax[i,j].set_title(tract)
                 
@@ -141,7 +148,8 @@ def plot_tsa_histograms( params, my_dwi, tract_names=None, threshold=0.5, verbos
     dpi = 300
     if 'dpi_tracts' in params:
         dpi = params['dpi_tracts']
-    output_file = '{0}/histogram_tsa_{1}_tracts.png'.format( figures_dir, network_name )
+    output_file = '{0}/histogram_tsa_{1}_tracts_thr_0{2}.png'.format( \
+                                        figures_dir, network_name, round(threshold*100) )
     plt.savefig( output_file, facecolor=plot_face_clr, transparent=True, dpi=dpi )
     plt.close()
         
@@ -160,11 +168,17 @@ def plot_tsa_histograms( params, my_dwi, tract_names=None, threshold=0.5, verbos
         sns.displot(df, x="TSA", kind='kde', fill=True, color=color)
     else:
         sns.displot(df, x="TSA", bins=params['num_bins'], stat=params['stat'], color=color)
+      
+    if 'xlim' in params:
+        plt.xlim(params['xlim'])
+    
+    if 'xticks' in params:
+        plt.xticks(params['xticks'])
 
     if params['show_title']:
         fig.suptitle('Histograms - All Tracts ({0})'.format(network_name))
 
-    output_file = '{0}/histogram_tsa_{1}_all.png'.format( figures_dir, network_name )
+    output_file = '{0}/histogram_tsa_{1}_all_thr_0{2}.png'.format( figures_dir, network_name, round(threshold*100) )
     
     dpi = 300
     if 'dpi_all' in params:
@@ -184,7 +198,7 @@ def plot_tsa_histograms( params, my_dwi, tract_names=None, threshold=0.5, verbos
 # alpha:             The alpha threshold to apply to p values
 # tract_names:       List of the tracts to plot
 # stat_type:         The type of FWE correction applied; one of 'uncorrected' (default),
-#                     'fdr', or 'rft'.
+#                     'fdr', 'rft', or 'perm'.
 # verbose:           Whether to print progress to screen
 #
 def plot_distance_traces( params, tract_names, alpha=0.5, stat_type='uncorrected', verbose=False ):
@@ -198,19 +212,22 @@ def plot_distance_traces( params, tract_names, alpha=0.5, stat_type='uncorrected
     tracts_dir = os.path.join(project_dir, params_tracts['general']['tracts_dir'], params_tracts['general']['network_name'])
 
     # Set font display parameters
+#     sns.set_context("paper", font_scale=params['font_scale'])
     plt.rc('axes', titlesize=params['axis_font']) 
     plt.rc('axes', labelsize=params['axis_font'])
     plt.rc('figure', titlesize=params['title_font'])
     plt.rc('xtick', labelsize=params['xticklabel_font'])
     plt.rc('ytick', labelsize=params['yticklabel_font']) 
-        
+
     metric = params_gen['summary_metric']
+    tract_thresh = params['traces']['tract_threshold']
+    thresh_str = '{0:02d}'.format(round(tract_thresh*100))
 
     for glm in params_glm:
         factors = params_glm[glm]['factors']
 
         glm_dir = '{0}/{1}/{2}'.format(tracts_dir, params_gen['glm_output_dir'], glm)
-        output_dir = '{0}/summary-{1}'.format(glm_dir, metric)
+        output_dir = '{0}/summary-{1}_thr{2}'.format(glm_dir, metric, thresh_str)
         
         figures_dir = '{0}/figures'.format(glm_dir)
         if not os.path.isdir(figures_dir):
@@ -219,10 +236,8 @@ def plot_distance_traces( params, tract_names, alpha=0.5, stat_type='uncorrected
         offset = 0
         
         suffix = ''
-        if stat_type=='fdr':
-            suffix = 'fdr'
-        elif stat_type=='rft':
-            suffix = 'rft'
+        if not (stat_type=='uncorrected'):
+            suffix = stat_type
 
         has_sig = {}
         for factor in factors[1:]:
@@ -241,11 +256,11 @@ def plot_distance_traces( params, tract_names, alpha=0.5, stat_type='uncorrected
             for tract_name, offset in zip(tracts_plotted, range(len(tracts_plotted)-1,-1,-1)):
                 stats_file = '{0}/stats_{1}.csv'.format(output_dir, tract_name)
                 T = pd.read_csv(stats_file)
-                tvals = T['{0}|tval'.format(factor)].values
+                tvals = T['{0}|tval'.format(factor_str)].values
                 px = ''
                 if len(suffix) > 0:
                     px = '{0}_'.format(suffix)
-                pvals = T['{0}|{1}pval'.format(factor, px)].values
+                pvals = T['{0}|{1}pval'.format(factor_str, px)].values
                 tvals[pvals > alpha] = 0
                 
                 if np.any(np.logical_and(tvals != 0, pvals < alpha)):
@@ -264,11 +279,13 @@ def plot_distance_traces( params, tract_names, alpha=0.5, stat_type='uncorrected
                 plt.title('T statistics for {0} [FDR corrected]'.format(factor))
             elif stat_type=='rft':
                 plt.title('T statistics for {0} [1D-RFT corrected]'.format(factor))
+            elif stat_type=='perm':
+                plt.title('T statistics for {0} [Permutation corrected]'.format(factor))
             else:
                 plt.title('T statistics for {0} [uncorrected]'.format(factor))
             
             sx = ''
-            if stat_type=='fdr' or stat_type=='rft':
+            if stat_type=='fdr' or stat_type=='rft' or stat_type=='perm':
                 sx = '_{0}'.format(stat_type)
             plt.savefig('{0}/lines_{1}{2}.png'.format(figures_dir, factor_str, sx))
 #             plt.show()
@@ -314,7 +331,7 @@ def plot_glm_results_all( params, my_glm, verbose=False ):
 #                      glm:            The GLM for which to generate plots
 #                      alpha:          The p-value threshold to determine significance
 #                      stat_type:      The type of FWE correction applied; one of 
-#                                       'uncorrected', 'fdr', or 'rft'.
+#                                       'uncorrected', 'fdr', 'rft', or 'perm'.
 #                      outlier_z:      The z-value absolute threshold to identify and remove 
 #                                       outliers
 #                      axis_font:      Font size for axis text
@@ -343,6 +360,9 @@ def plot_glm_results( params, my_glm, verbose=False ):
     params_gen = my_glm.params['general']
     params_glm = my_glm.params['glm']
     params_tracts = my_glm.params['tracts']
+    params_trace = my_glm.params['traces']
+    tract_thresh = params_trace['tract_threshold']
+    thresh_str = '{0:02d}'.format(round(tract_thresh*100))
     
     source_dir = params_tracts['general']['source_dir']
     project_dir = os.path.join(source_dir, params_tracts['general']['project_dir'])
@@ -351,7 +371,7 @@ def plot_glm_results( params, my_glm, verbose=False ):
     metric = params_gen['summary_metric']
     glm = params['glm']
     glm_dir = '{0}/{1}/{2}'.format(tracts_dir, params_gen['glm_output_dir'], glm)
-    output_dir = '{0}/summary-{1}'.format(glm_dir, metric)
+    output_dir = '{0}/summary-{1}_thr{2}'.format(glm_dir, metric, thresh_str)
 
     tract_name = params['tract_name']
     stats_file = '{0}/stats_{1}.csv'.format(output_dir, tract_name)
@@ -391,21 +411,30 @@ def plot_glm_results( params, my_glm, verbose=False ):
         nonlocal tract_name
         nonlocal my_glm
         nonlocal tracts_dir
+        nonlocal tract_thresh
         
         subjects = my_glm.subjects
         
         params_tracts = my_glm.params['tracts']
         params_regress = params_tracts['dwi_regressions']
         params_glm = my_glm.params['glm']
+        params_avdir = params_tracts['average_directions']
+        
+        use_norm = params_avdir['use_normalized']
                 
-        dist_file = '{0}/dist/tract_dist_bidir_{1}.nii.gz'.format(tracts_dir, tract_name)
-        tract_file = '{0}/final/tract_final_norm_bidir_{1}.nii.gz'.format(tracts_dir, tract_name)
+        dist_file = '{0}/dist/dist_bidir_{1}.nii.gz'.format(tracts_dir, tract_name)
+        if use_norm:
+            tract_file = '{0}/final/tract_final_norm_bidir_{1}.nii.gz'.format(tracts_dir, tract_name)
+        else:
+            tract_file = '{0}/final/tract_final_bidir_{1}.nii.gz'.format(tracts_dir, tract_name)
+            
         V_img = nib.load(dist_file)
         V_dist = np.round(V_img.get_fdata().flatten())
         V_tract = nib.load(tract_file).get_fdata().flatten()
 
-        idx_tract = np.flatnonzero(V_tract > params_glm[glm]['tract_thres'])
+        idx_tract = np.flatnonzero(V_tract >= tract_thresh) # params_glm[glm]['tract_thres'])
         V_dist = V_dist[idx_tract]
+        V_tract = V_tract[idx_tract]
 
         N_sub = len(subjects)
 
@@ -423,22 +452,25 @@ def plot_glm_results( params, my_glm, verbose=False ):
             V_sub = nib.load(beta_file).get_fdata()
             V_betas[i,:] = V_sub.ravel()[idx_tract]
             
-        return V_betas, V_dist, idx_tract
+        return V_betas, V_dist, V_tract, idx_tract
     
     
-    def get_average_betas( factor, V_betas, V_dist, idx_tract ):
+    def get_average_betas( factor, V_betas, V_dist, V_tract, idx_tract ):
         
         nonlocal verbose
         nonlocal params
         nonlocal my_glm
         nonlocal tracts_dir
-        
+        nonlocal output_dir
+        nonlocal tract_thresh
+
         subjects = my_glm.subjects
         params_gen = my_glm.params['general']
         params_tracts = my_glm.params['tracts']
+        params_trace = my_glm.params['traces']
         glm_dir = '{0}/{1}/{2}'.format(tracts_dir, params_gen['glm_output_dir'], params['glm'])
         metric = params_gen['summary_metric']
-        summary_dir = '{0}/summary-{1}'.format(glm_dir, metric)
+#         summary_dir = '{0}/summary-{1}_thr'.format(glm_dir, metric)
     
         factor_str = factor.replace('*','X')
         std_str = ''
@@ -455,19 +487,21 @@ def plot_glm_results( params, my_glm, verbose=False ):
         V_tvals = nib.load(tval_file).get_fdata().flatten()
         V_tvals = V_tvals[idx_tract]
             
-        stats_file = '{0}/stats_{1}.csv'.format(summary_dir, tract_name)
+        stats_file = '{0}/stats_{1}.csv'.format(output_dir, tract_name)
         T = pd.read_csv(stats_file)
-        tvals = T['{0}|tval'.format(factor)].values.copy()
+        tvals = T['{0}|tval'.format(factor_str)].values.copy()
         tvals_abs = np.abs(tvals)
         N_nodes = tvals.size
         pvals = np.zeros(N_nodes)
         
         if stat_type == 'uncorrected':
-            pvals = T['{0}|pval'.format(factor)].values.copy()
+            pvals = T['{0}|pval'.format(factor_str)].values.copy()
         elif stat_type == 'fdr':
-            pvals = T['{0}|fdr_pval'.format(factor)].values.copy()
+            pvals = T['{0}|fdr_pval'.format(factor_str)].values.copy()
         elif stat_type == 'rft':
-            pvals = T['{0}|rft_pval'.format(factor)].values.copy()
+            pvals = T['{0}|rft_pval'.format(factor_str)].values.copy()
+        elif stat_type == 'perm':
+            pvals = T['{0}|perm_pval'.format(factor_str)].values.copy()
         else:
             raise Exception('Invalid statistic type: {0}. Must be one of "uncorrected", "fdr", or "rft"')
 
@@ -482,17 +516,22 @@ def plot_glm_results( params, my_glm, verbose=False ):
         count_pos = 0
         count_neg = 0
         for d, i in zip(dists, range(0, dists.size)):
-            idx_d = V_dist==d
-            if not np.any(idx_d):
+            idx_d = np.argwhere(V_dist==d).squeeze()
+
+            if idx_d.size < 2:
                 # Probably because tract threshold is too high...
 #                 print('No idx at dist {0}'.format(d))
                 continue
             V_bd = V_betas[:,idx_d]
             V_t = V_tvals[idx_d]
+            V_tr = V_tract[idx_d]
             if tvals[i] > 0:
                 count_pos += 1
                 if metric == 'max':
-                    bb_pos[:,i] = V_bd[:,np.argmax(V_t)]
+                    weights = np.power(V_tr, params_trace['max_weight_factor'])
+                    wt_tvals = np.multiply(weights, V_t)
+                    idx_max = np.argmax(wt_tvals)
+                    bb_pos[:,i] = V_bd[:,idx_max]
                 elif metric == 'mean':
                     bb_pos[:,i] = np.mean(V_bd,axis=1)
                 elif metric == 'median':
@@ -500,7 +539,10 @@ def plot_glm_results( params, my_glm, verbose=False ):
             if tvals[i] < 0:
                 count_neg += 1
                 if metric == 'max':
-                    bb_neg[:,i] = V_bd[:,np.argmin(V_t)]
+                    weights = np.power(V_tr, params_trace['max_weight_factor'])
+                    wt_tvals = np.multiply(weights, V_t)
+                    idx_min = np.argmin(wt_tvals)
+                    bb_neg[:,i] = V_bd[:,idx_min]
                 elif metric == 'mean':
                     bb_neg[:,i] = np.mean(V_bd,axis=1)
                 elif metric == 'median':
@@ -659,9 +701,10 @@ def plot_glm_results( params, my_glm, verbose=False ):
                 ax.legend(loc='lower right')
         
         suffix = ''
-        if stat_type=='fdr' or stat_type=='rft':
+        if stat_type != 'uncorrected':
             suffix = '_{0}'.format(stat_type)
 
+        plt.tight_layout()
         plt.savefig( '{0}/scatter_{1}_{2}{3}.png'.format( figures_dir, factor_str, tract_name, suffix ), \
                      facecolor=plot_face_clr, \
                      transparent=True )
@@ -728,9 +771,10 @@ def plot_glm_results( params, my_glm, verbose=False ):
             ax.set(xlabel=factor, ylabel='TSA')
         
         suffix = ''
-        if stat_type=='fdr' or stat_type=='rft':
+        if stat_type != 'uncorrected':
             suffix = '_{0}'.format(stat_type)
-            
+        
+        plt.tight_layout()
         plt.savefig( '{0}/scatter_{1}_{2}{3}.png'.format( figures_dir, factor, tract_name, suffix ), \
                      facecolor=plot_face_clr, \
                      transparent=True )
@@ -821,9 +865,10 @@ def plot_glm_results( params, my_glm, verbose=False ):
                 idx_a += 1   
          
         suffix = ''
-        if stat_type=='fdr' or stat_type=='rft':
+        if stat_type != 'uncorrected':
             suffix = '_{0}'.format(stat_type)
         
+        plt.tight_layout()
         plt.savefig( '{0}/violin_{1}_{2}{3}.png'.format( figures_dir, factor_str, tract_name, suffix ), \
                      facecolor=plot_face_clr, \
                      transparent=True )
@@ -832,7 +877,7 @@ def plot_glm_results( params, my_glm, verbose=False ):
 
 
     # Load the betas and plot each factor
-    V_betas, V_dist, idx_tract = load_betas( )
+    V_betas, V_dist, V_tract, idx_tract = load_betas( )
     
     # Set font display parameters
     plt.rc('axes', titlesize=params['axis_font']) 
@@ -850,7 +895,7 @@ def plot_glm_results( params, my_glm, verbose=False ):
         factors.remove('Intercept')
     
     for factor in factors:
-        betas_pos, betas_neg = get_average_betas( factor, V_betas, V_dist, idx_tract )
+        betas_pos, betas_neg = get_average_betas( factor, V_betas, V_dist, V_tract, idx_tract )
         cneg = np.count_nonzero(np.isnan(betas_neg))
         cpos = np.count_nonzero(np.isnan(betas_pos))
         if cneg+cpos > 0:

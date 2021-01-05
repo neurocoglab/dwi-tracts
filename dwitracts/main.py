@@ -13,7 +13,8 @@ import glob
 from . import utils
 import shutil
 import time
-from tqdm import tnrange, tqdm_notebook, tqdm
+# from tqdm import tnrange, tqdm_notebook, tqdm
+from tqdm.notebook import tqdm
 import pandas as pd
 
 class DwiTracts:
@@ -70,6 +71,9 @@ class DwiTracts:
         self.avdir_dir = os.path.join(self.tracts_dir, 'avrdir')
         if not os.path.isdir(self.avdir_dir):
             os.makedirs(self.avdir_dir)
+        self.debug_dir = os.path.join(self.tracts_dir, 'debug')
+        if not os.path.isdir(self.debug_dir):
+            os.makedirs(self.debug_dir)
             
         # Subjects
         subjects = [];
@@ -141,7 +145,7 @@ class DwiTracts:
         self.V_img = V_img
         self.roi_suffix = roi_suffix
         
-        tracts = self.get_final_bidirs()
+        tracts = self.get_final_bidirs(0, True) # params_gen['debug'])
         if len(tracts) > 0:
             self.tracts_final_bidir = tracts
         
@@ -149,7 +153,7 @@ class DwiTracts:
         return True
         
         
-    def get_final_bidirs( self ):
+    def get_final_bidirs( self, threshold=-1, debug=False ):
         
         tracts = []
         N_roi = len(self.rois)
@@ -161,20 +165,35 @@ class DwiTracts:
                 tract_name = '{0}_{1}'.format(roi_a, roi_b)
                 test = '{0}/tract_final_bidir_{1}.nii.gz'.format(self.final_dir, tract_name)
                 if os.path.isfile(test):
+                    if threshold >= 0:
+                        V = nib.load(test).get_fdata()
+                        V[np.isnan(V)] = 0
+                        if not (np.greater(V,threshold)).any():
+                            if debug:
+                                print('DEBUG: tract {0} has no voxels > {1:1.3f}'.format(tract_name, threshold))
+                            continue
                     tracts.append(tract_name)
-                    
+                
         return tracts
         
         
     # Compute average bidirectional tract distributions based upon 
-    # probabilistic tractography.
+    # probabilistic tractography. This function produces two average images:
+    #
+    # 1. Minimal average (avr_min): the minimum across both directions is taken
+    #     for each participant, and then averaged
+    # 2. Binary average (avr_bin): the binary intersection across both directions
+    #     is taken for each participant, and then averaged
+    #
+    # Averages are smoothed and normalized to [0,1]
     #
     # Tractography (Bedpostx, Probtrackx) must have already have been performed
     #
     # verbose:        Whether to print messages to the console
     # clobber:        Whether to overwrite existing output
+    # debug:          Whether to perform debug operations
     #
-    def compute_bidirectional_averages( self, clobber=False, verbose=False):
+    def compute_bidirectional_averages( self, clobber=False, verbose=False, debug=False):
     
         if not self.is_init:
             print( 'DwiTracts object has not yet been initialized!' )
@@ -185,8 +204,7 @@ class DwiTracts:
         if os.path.isfile( output_list ) and not clobber:
             print(' Output file {0} exists, use "clobber=True" to overwrite!'.format(output_list) )
             return False
-                                                         
-        
+
         params_avt = self.params['average_tracts']
         fwhm = params_avt['fwhm']
         bin_thres = params_avt['bin_thres']
@@ -198,9 +216,9 @@ class DwiTracts:
         if verbose:
             print('Processing subject-wise tractography...')
         subj_passed = []  
-
+        
         s = 1
-        for subject in tqdm_notebook(self.subjects, 'Progress'):
+        for subject in tqdm(self.subjects, 'Progress'):
             prefix_sub = '{0}{1}'.format(params_gen['prefix'], subject)
             if verbose:
                 print('  Processing subject: {0} ({1} of {2})'.format(subject, s, len(self.subjects)))
@@ -218,8 +236,8 @@ class DwiTracts:
                         mx = V_min.max()
                         if mx > 0:
                             V_min = np.divide(V_min, mx) # Normalize to maximum (if not all zeros)      
-                        V_min = np.multiply(V_min, np.greater(V_min, bin_thres).astype(np.float16)) # Binarize to bin_thresh
-                        V_bin = np.greater(V_min, 0).astype(np.float16)                           
+                        V_bin = np.multiply(V_min, np.greater(V_min, bin_thres).astype(np.float16)) # Binarize to bin_thresh
+#                         V_bin = np.greater(V_min, bin_thres).astype(np.float16)                           
                         self.V_min_avr[roi_i][roi_j] = np.add(self.V_min_avr[roi_i][roi_j], V_min)
                         self.V_bin_avr[roi_i][roi_j] = np.add(self.V_bin_avr[roi_i][roi_j], V_bin)
                         passed = True
@@ -248,31 +266,47 @@ class DwiTracts:
             print('Done processing subjects.\nSmoothing averages and saving...')
 
         # Normalize, smooth, and save results
-        for roi_i in tqdm_notebook(self.roi_pairs, desc='Smoothing'):
+        for roi_i in tqdm(self.roi_pairs, desc='Smoothing'):
             for roi_j in self.roi_pairs[roi_i]:
 
                 if verbose:
                     print('  Smoothing tract for {0} | {1}'.format(roi_i, roi_j))
 
+                # Averaged minimum of two images
                 V = self.V_min_avr[roi_i][roi_j]
+
+                # Smooth
+                img = nib.Nifti1Image(V, self.V_img.affine, self.V_img.header)
+                img = image.smooth_img(img, fwhm)
+                V = img.get_fdata()
+                
                 # Normalize
                 mx = np.max(V)
+                if debug:
+                    print('Max for min image: {0:1.6f}'.format(mx))
+                if (mx > 0):
+                    V = np.divide(V, mx)
+
+                # Save
+                img = nib.Nifti1Image(V, self.V_img.affine, self.V_img.header) 
+                nib.save(img, '{0}/avr_min_tract_counts_{1}_{2}.nii.gz'.format(avr_dir, roi_i, roi_j))
+
+                # Averaged binary intersection of two images
+                V = self.V_bin_avr[roi_i][roi_j]
+
+                # Smooth
+                img = nib.Nifti1Image(V, self.V_img.affine, self.V_img.header)
+                img = image.smooth_img(img, fwhm)
+                V = img.get_fdata()
+                
+                # Normalize
+                mx = np.max(V)
+                if debug:
+                    print('Max for bin image: {0:1.6f}'.format(mx))
                 if (mx > 0):
                     V = np.divide(V, mx)
                 img = nib.Nifti1Image(V, self.V_img.affine, self.V_img.header)
-                # Smooth
-                V_img = image.smooth_img(img, fwhm)
-                # Save
-                nib.save(self.V_img, '{0}/avr_min_tract_counts_{1}_{2}.nii.gz'.format(avr_dir, roi_i, roi_j))
-
-                V = self.V_bin_avr[roi_i][roi_j]
-                # Normalize
-                mx = np.max(V)
-                if (mx > 0):
-                    V = np.divide(V, mx)
-                V_img = nib.Nifti1Image(V, self.V_img.affine, self.V_img.header)
-                # Smooth
-                V_img = image.smooth_img(img, fwhm)
+                
                 # Save
                 nib.save(img, '{0}/avr_bin_tract_counts_{1}_{2}.nii.gz'.format(avr_dir, roi_i, roi_j))
 
@@ -286,7 +320,7 @@ class DwiTracts:
     # verbose:        Whether to print messages to the console
     # clobber:        Whether to overwrite existing output
     #
-    def compute_tract_distances( self, clobber=False, verbose=False):
+    def compute_tract_distances( self, clobber=False, verbose=False, debug=False):
         
         if not self.is_init:
             print( 'DwiTracts object has not yet been initialized!' )
@@ -299,6 +333,7 @@ class DwiTracts:
         params_gauss = self.params['gaussians']
         threshold = params_gauss['threshold']
         seed_dilate = params_gauss['seed_dilate']
+        avr_type = params_gauss['avr_type']
 
         V_rois = {}
         V_dists = {}
@@ -315,10 +350,20 @@ class DwiTracts:
             for roi_j in self.roi_pairs[roi_i]:
                 rois_a.append(roi_i)
                 rois_b.append(roi_j)  
+                
+        if debug and seed_dilate > 1:
+            print('DEBUG: saving dilated ROI images...')
+            for roi in self.rois:
+                V = V_rois[roi]
+                V = utils.dilate_mask(V, seed_dilate)
+                dfile = '{0}/dilate_{1}_{2}.nii.gz'.format(self.debug_dir, roi, seed_dilate)
+                img = nib.Nifti1Image(V, self.V_img.affine, self.V_img.header)
+                nib.save(img, dfile)
+            print('done.')
 
         # Loop through ROI pairs and compute stepwise distance using a flood-fill
         # approach
-        for c in tqdm_notebook(range (0,len(rois_a)), desc="Progress"):
+        for c in tqdm(range (0,len(rois_a)), desc="Progress"):
             roi_a = rois_a[c]
             V_roi_a = V_rois[roi_a]
             roi_b = rois_b[c]
@@ -336,9 +381,9 @@ class DwiTracts:
                     print('  Images already exist for {0}/{1}; loading from file.'.format(roi_a, roi_b))
             else:
 
-                tract_file = '{0}/avr_bin_tract_counts_{1}_{2}.nii.gz'.format(self.avr_dir, roi_a, roi_b)
+                tract_file = '{0}/avr_{1}_tract_counts_{2}_{3}.nii.gz'.format(self.avr_dir, avr_type, roi_a, roi_b)
                 if not os.path.isfile(tract_file):
-                    tract_file = '{0}/avr_bin_tract_counts_{1}_{2}.nii.gz'.format(self.avr_dir, roi_b, roi_a)
+                    tract_file = '{0}/avr_{1}_tract_counts_{1}_{2}.nii.gz'.format(self.avr_dir, avr_type, roi_b, roi_a)
 
                 if not os.path.isfile(tract_file):
                     if verbose:
@@ -349,15 +394,26 @@ class DwiTracts:
 
                     V_mask = np.greater(V_tract, threshold).astype(np.float)
                     V_tract = np.multiply(V_mask, V_tract)
+                    if debug:
+                        dfile = '{0}/mask_dist_{1}_{2}.nii.gz'.format(self.debug_dir, roi_a, roi_b)
+                        img = nib.Nifti1Image(V_tract, self.V_img.affine, self.V_img.header)
+                        nib.save(img, dfile)
 
                     # Compute voxel steps from seed as distances
-                    V_dist_a = utils.get_tract_dist(V_mask, V_roi_a, seed_dilate, V_stop=V_roi_b)
-                    V_dist_b = utils.get_tract_dist(V_mask, V_roi_b, seed_dilate, V_stop=V_roi_a)
+                    V_dist_a = utils.get_tract_dist(V_mask, V_roi_a, seed_dilate, V_stop=V_roi_b, debug=False)
+                    V_dist_b = utils.get_tract_dist(V_mask, V_roi_b, seed_dilate, V_stop=V_roi_a, debug=False)
                     V_dist = np.logical_and(V_dist_a>0, V_dist_b>0)
-
+                    
                     if not np.any(V_dist):
                         if verbose:
                             print('  ** Warning: Tracts do not overlap for {0}/{1}. Skipping'.format(roi_a, roi_b))
+                        if debug:
+                            dfile = '{0}/dist_{1}_{2}.nii.gz'.format(self.debug_dir, roi_a, roi_b)
+                            img = nib.Nifti1Image(V_dist_a, self.V_img.affine, self.V_img.header)
+                            nib.save(img, dfile)
+                            dfile = '{0}/dist_{1}_{2}.nii.gz'.format(self.debug_dir, roi_b, roi_a)
+                            img = nib.Nifti1Image(V_dist_b, self.V_img.affine, self.V_img.header)
+                            nib.save(img, dfile)
                     else:
 
                          # Write distances to file
@@ -392,7 +448,7 @@ class DwiTracts:
     # verbose:        Whether to print messages to the console
     # clobber:        Whether to overwrite existing output 
     #
-    def estimate_unidirectional_tracts( self, verbose=False, clobber=False ):
+    def estimate_unidirectional_tracts( self, verbose=False, clobber=False, debug=False ):
         
         # TODO: check flag files for each step to ensure prequisites are met
         if not self.is_init:
@@ -411,6 +467,7 @@ class DwiTracts:
         gauss_max_radius = params_gauss['gauss_max_radius']
         tract_thresh = params_gauss['tract_thresh']
         mask_dilate = params_gauss['mask_dilate']
+        seed_dilate = params_gauss['seed_dilate']
 
         V_rois = {}
         for roi in self.rois:
@@ -455,7 +512,7 @@ class DwiTracts:
 
         # Loop through each ROI pair and determine core polylines and gaussians
         # surrounding these polylines (uncertainty field)
-        for ii in tqdm_notebook(range(0,len(tract_list_ab)), desc='Progress'):
+        for ii in tqdm(range(0,len(tract_list_ab)), desc='Progress'):
 
             tract_name_ab = tract_list_ab[ii]
             tract_name_ba = tract_list_ba[ii]
@@ -494,8 +551,8 @@ class DwiTracts:
 
                     # Dilate A and B to use as stop masks
                     if mask_dilate:
-                        V_target_a = utils.dilate_mask(np.greater(V_target_a,0))
-                        V_target_b = utils.dilate_mask(np.greater(V_target_b,0))
+                        V_target_a = utils.dilate_mask(np.greater(V_target_a,0), seed_dilate)
+                        V_target_b = utils.dilate_mask(np.greater(V_target_b,0), seed_dilate)
 
                     if params_gen['debug']:
                         # Write to debug file
@@ -559,8 +616,9 @@ class DwiTracts:
                             d_start = round(dist_max/2)
 
                             maxes = np.zeros((dist_max,3), dtype=int)
+                            M_debug = np.zeros((dist_max,100))
 
-                            for k in tqdm_notebook(range(0, d_start), desc='Distances'.format(c)):
+                            for k in tqdm(range(0, d_start), desc='Distances'.format(c)):
 
                                 for oe in [0,1]:
 
@@ -581,7 +639,14 @@ class DwiTracts:
                                         T = V_tract[T_idx]
                                         T_idx = np.flatnonzero(T_idx)
                                         sidx = T.argsort()[::-1]
+#                                         print('T({0}): {1}'.format(d, T[sidx[0:10]]))
+                                        
                                         idx_max = np.unravel_index(T_idx[sidx[0]], V_tract.shape)
+#                                         print('{0}: {1}'.format(idx_max, V_tract[idx_max]))
+                                        
+                                        if debug:
+                                            row = T[sidx[0:min(99,sidx.size-1)]]
+                                            M_debug[d, 0:row.size] = row
 
                                         if k == 0:
                                             maxes[d, :] = idx_max
@@ -634,6 +699,12 @@ class DwiTracts:
                                     # If target was found, we're done
                                     if found_target_a and found_target_b:
                                         break
+                                
+                            if debug:
+                                out_file = '{0}/M_{1}.csv'.format(self.debug_dir, tract_name)
+                                print('DEBUG: saving sorted values to {0}'.format(out_file))
+                                np.savetxt(out_file, M_debug, fmt='%1.6f')
+                                                   
 
                             found_target = found_target_a and found_target_b
 
@@ -692,7 +763,7 @@ class DwiTracts:
                                 max_radius = round(gauss_max_radius)
                                 nv = maxes_vox.shape[0]
 
-                                for v in tqdm_notebook(range(1, nv),desc='Gaussians'):
+                                for v in tqdm(range(1, nv),desc='Gaussians'):
                                     p = maxes_vox[v,:]
                                     p0 = maxes_vox[v-1,:]
                                     v_axis = p - p0
@@ -723,14 +794,16 @@ class DwiTracts:
 
                                 # Apply a bit of smoothing
                                 V_gauss = utils.smooth_volume(V_gauss, self.V_img, 5)
+                                V_gauss = np.divide(V_gauss, V_gauss.max())
 
                                 # Multiply with original (unthresholded) tract
+                                V_orig = np.divide(V_orig, V_orig.max())
                                 V_tract = np.multiply(V_orig, V_gauss)
                                 V_tract = np.multiply(V_tract, np.greater(V_tract, tract_thresh))
                                 V_tract = np.divide(V_tract, V_tract.max())
                                 V_dist = np.round(np.multiply(V_dist, np.greater(V_tract, 0)))
                                 dist_max = int(np.max(V_dist))
-
+                                
                                 # Write results to NIFTI image files
                                 img = nib.Nifti1Image(V_gauss, self.V_img.affine, self.V_img.header)
                                 nib.save(img, '{0}/gauss_max_{1}_{2}.nii.gz'.format(my_target_gauss, tract_name, suffix))
@@ -798,7 +871,7 @@ class DwiTracts:
 
         self.tracts_final_bidir = []
                 
-        for a in tqdm_notebook(range(0, N_roi-1), desc="Progress"):
+        for a in tqdm(range(0, N_roi-1), desc="Progress"):
             roi_a = self.rois[a]
             for b in range(a+1, N_roi):
                 roi_b = self.rois[b]
@@ -869,7 +942,7 @@ class DwiTracts:
 
                     img = nib.Nifti1Image(V, self.V_img.affine, self.V_img.header)
                     nib.save(img, '{0}/tract_final_norm_bidir_{1}.nii.gz'.format(self.final_dir, ab))
-                    
+
                     self.tracts_final_bidir.append(ab)
 
                     if verbose:
@@ -943,6 +1016,7 @@ class DwiTracts:
         params_gen = self.params['general']
         params_avdir = self.params['average_directions']
         tract_thresh = params_avdir['threshold']
+        use_norm = params_avdir['use_normalized']
 
         tract_list = []
         rois_a = []
@@ -957,7 +1031,7 @@ class DwiTracts:
                 rois_a.append(roi_a)
                 rois_b.append(roi_b)
 
-        for c in tqdm_notebook(range(0, len(rois_a)), desc='Total Progress'):
+        for c in tqdm(range(0, len(rois_a)), desc='Total Progress'):
             roi_a = rois_a[c]
             roi_b = rois_b[c]
             tract_name = '{0}_{1}'.format(roi_a,roi_b)
@@ -967,7 +1041,10 @@ class DwiTracts:
                 if verbose:
                     print('  Average orientations already computed for {0}. Skipping.'.format(tract_name))
             else:
-                tract_file = '{0}/tract_final_bidir_{1}.nii.gz'.format(self.final_dir, tract_name)
+                if use_norm:
+                    tract_file = '{0}/tract_final_norm_bidir_{1}.nii.gz'.format(self.final_dir, tract_name)
+                else:
+                    tract_file = '{0}/tract_final_bidir_{1}.nii.gz'.format(self.final_dir, tract_name)
 
                 if not os.path.isfile(tract_file):
                     if verbose:
@@ -984,7 +1061,7 @@ class DwiTracts:
                     V_img3 = None
 
                     # For each subject, read local direction vectors
-                    for subject in tqdm_notebook(self.subjects, desc='{0}'.format(tract_name)):
+                    for subject in tqdm(self.subjects, desc='{0}'.format(tract_name)):
                         prefix_sub = '{0}{1}'.format(params_gen['prefix'], subject)
 
                         # AB orientations
@@ -1057,13 +1134,60 @@ class DwiTracts:
         
         failures = []
         
-        for subject in tqdm_notebook( self.subjects, desc='Progress' ):           
+        for subject in tqdm( self.subjects, desc='Progress' ):           
             failure_count = process_tsa_subject( subject, self, verbose=verbose, debug=debug )
             failures.append(failure_count)
             
         df = pd.DataFrame({'Subject': self.subjects, 'Failures': failures})
         df.to_csv( '{0}/tsa_failures.csv'.format(self.tracts_dir) )
         
+        return True
+        
+        
+    # Generates a mean TSA image (across subjects) for each tract
+    #
+    # verbose:        Whether to print messages to the console
+    # clobber:        Whether to overwrite existing output
+    # debug:          Whether to use debug mode (print lots to console)
+    #   
+    def generate_mean_tsa_images( self, verbose=False, clobber=False, debug=False ):
+        
+        params_gen = self.params['general']
+        params_regress = self.params['dwi_regressions']
+        N_subj = len(self.subjects)
+        
+        tsa_dir = '{0}/tsa_avr'.format(self.tracts_dir)
+        if not os.path.isdir(tsa_dir):
+            os.makedirs(tsa_dir)
+        
+        for tract in tqdm(self.tracts_final_bidir, desc='Progress'):
+            
+            V_sum = None
+            
+            for subject in self.subjects:
+                prefix_sub = '{0}{1}'.format(params_gen['prefix'], subject)
+                subj_dir = os.path.join(self.project_dir, params_gen['deriv_dir'], prefix_sub, \
+                                                          params_gen['sub_dirs'])
+                subj_dir = '{0}/dwi/{1}/{2}'.format(subj_dir, params_regress['regress_dir'], \
+                                                              params_gen['network_name'])
+                beta_file = '{0}/betas_mni_sm_{1}um_{2}.nii.gz' \
+                                  .format(subj_dir, int(1000.0*params_regress['beta_sm_fwhm']), tract)
+                
+                img = nib.load(beta_file)
+                V_beta = img.get_fdata()
+                
+                if V_sum is None:
+                    V_sum = V_beta
+                else:
+                    V_sum = V_sum + V_beta
+                    
+            V_sum = np.divide(V_sum, N_subj)
+            img = nib.Nifti1Image(V_sum, img.affine, img.header)
+            nib.save(img, '{0}/tsa_avr_{1}.nii.gz'.format(tsa_dir, tract))
+            if verbose:
+                print('Done tract {0}'.format(tract))
+            
+        print('Average TSA images saved to {0}'.format(tsa_dir))
         return True
         
         
@@ -1079,8 +1203,20 @@ class DwiTracts:
         params_gen = self.params['general']
         params_regress = self.params['dwi_regressions']
                 
-        dist_file = '{0}/dist/tract_dist_bidir_{1}.nii.gz'.format(self.tracts_dir, tract_name)
-        tract_file = '{0}/final/tract_final_bidir_{1}.nii.gz'.format(self.tracts_dir, tract_name)
+        dist_file = '{0}/dist/dist_bidir_{1}.nii.gz'.format(self.tracts_dir, tract_name)
+        
+        params_avdir = self.params['average_directions']
+        tract_thresh = params_avdir['threshold']
+        if tract_thresh > threshold:
+            if verbose:
+                print(' Threshold {0} < bidirectional threshold {1}... using {1}'.format(threshold, tract_thresh))
+            threshold = tract_thresh
+        use_norm = params_avdir['use_normalized']
+        
+        if use_norm:
+            tract_file = '{0}/tract_final_norm_bidir_{1}.nii.gz'.format(self.final_dir, tract_name)
+        else:
+            tract_file = '{0}/tract_final_bidir_{1}.nii.gz'.format(self.final_dir, tract_name)
         V_img = nib.load(dist_file)
         V_dist = np.round(V_img.get_fdata().flatten())
         V_tract = nib.load(tract_file).get_fdata().flatten()
@@ -1138,12 +1274,15 @@ def process_tsa_subject( subject, my_dwi, verbose=False, debug=False ):
     params_bpx = params_preproc['bedpostx']
     params_ptx = params_preproc['probtrackx']
     params_regress = my_dwi.params['dwi_regressions']
+    tract_thres = my_dwi.params['average_directions']['threshold'] # Threshold must match
 
     fsl_root = params_regress['fsl_root']
     fsl_maths = '{0}/bin/fslmaths'.format(fsl_root)
     fsl_vecreg = '{0}/bin/vecreg'.format(fsl_root)
     fsl_applywarp = '{0}/bin/applywarp'.format(fsl_root)
     fsl_eddy = '{0}/bin/eddy_correct'.format(fsl_root)
+    
+    use_norm = params_regress['use_normalized']
 
     fa_img = params_regress['fa_img']
     standard_img = 'utils/{0}'.format(params_regress['standard_img'])
@@ -1255,6 +1394,7 @@ def process_tsa_subject( subject, my_dwi, verbose=False, debug=False ):
     b0 = np.less_equal(bvals, 50)
     bp = np.greater(bvals, 50)
     bvecs = bvecs[bp,:]
+    bvecs = utils.make_vectors_positive(bvecs)
     
     N_img = bp[bp==True].size
     
@@ -1272,7 +1412,10 @@ def process_tsa_subject( subject, my_dwi, verbose=False, debug=False ):
     # Compute regressions for each tract
     for i in range(0, len(tract_names)):
         tract_name = tract_names[i]
-        tract_file_in = '{0}/tract_final_bidir_{1}.nii.gz'.format(my_dwi.final_dir, tract_name)
+        if use_norm:
+            tract_file_in = '{0}/tract_final_norm_bidir_{1}.nii.gz'.format(my_dwi.final_dir, tract_name)
+        else:
+            tract_file_in = '{0}/tract_final_bidir_{1}.nii.gz'.format(my_dwi.final_dir, tract_name)
         tract_file = '{0}/{1}.{2}.tract.nii.gz'.format(tmp_dir, subject, tract_name)
         avrdir_file_in = '{0}/avrdir_{1}.nii.gz'.format(my_dwi.avdir_dir, tract_name)
         avrdir_file = '{0}/{1}.{2}.avrdir.nii.gz'.format(tmp_dir, subject, tract_name)
@@ -1331,10 +1474,16 @@ def process_tsa_subject( subject, my_dwi, verbose=False, debug=False ):
                 V_tvals = np.zeros(V_tract.shape, float)
                 V_pvals = np.zeros(V_tract.shape, float)
                 
-                idx = np.greater(V_tract, params_regress['threshold'])
+#                 idx = np.greater(V_tract, params_regress['threshold'])
+                idx = np.greater(V_tract, tract_thres)
+
                 fidx = np.transpose(np.nonzero(idx))
                 
-                if np.any(idx):
+                if not np.any(idx):
+                    if verbose:
+                        print(' {0} had no voxels > threshold [{1}]'.format(tract_name, tract_thres))
+                    success = False
+                else:
                     # Regression per voxel
                     N_idx = fidx.shape[0]
                     v_d = np.zeros([N_idx, 3], float)
@@ -1343,8 +1492,10 @@ def process_tsa_subject( subject, my_dwi, verbose=False, debug=False ):
                         y = fidx[i,1]
                         z = fidx[i,2]
                         v_d[i,:] = V_avrdir[x,y,z,:]
-
-                    fidx = fidx[np.any(v_d,axis=1)]
+                                  
+                    idx_keep = np.any(v_d,axis=1) 
+                    fidx = fidx[idx_keep]
+                    v_d = v_d[idx_keep,:]
                     N_idx = fidx.shape[0]
                     idx = np.zeros(idx.shape, dtype=bool)
                     for i in range(0, N_idx):
@@ -1367,12 +1518,17 @@ def process_tsa_subject( subject, my_dwi, verbose=False, debug=False ):
                     pvals   = np.zeros(N_idx, float)
 
                     for vv in range(0, N_idx):
+                        vv_d = v_d[vv,:]
                         b0   = b0_d[vv]
                         yy   = dwi_d[vv,:] / b0
+                        # z-score
+                        yy = stats.zscore(yy, nan_policy='raise')
                         bb   = b_d
                         dd   = diff_d[vv]
                         xTv  = np.matmul(v_d[vv,:],x_d.T)
                         xx   = np.exp(-(((bb*dd) * xTv)**2))
+                        # z-score
+                        xx   = stats.zscore(xx, nan_policy='raise')
                         xx   = sm.add_constant(xx, has_constant='add')
 
                         results = sm.OLS(yy, xx).fit()
@@ -1386,13 +1542,13 @@ def process_tsa_subject( subject, my_dwi, verbose=False, debug=False ):
                     
                     V_beta[idx] = betas
                     
-                    stats = {'betas': V_beta}
+                    stat_vals = {'betas': V_beta}
                     
                     if params_regress['write_stats']:
                         V_tvals[idx] = tvals
                         V_pvals[idx] = pvals
-                        stats['tvals'] = V_tvals
-                        stats['pvals'] = V_pvals
+                        stat_vals['tvals'] = V_tvals
+                        stat_vals['pvals'] = V_pvals
                     
                     # Include normalized betas?
                     if params_regress['beta_norm']:
@@ -1400,48 +1556,30 @@ def process_tsa_subject( subject, my_dwi, verbose=False, debug=False ):
                                 (params_regress['beta_max'] - params_regress['beta_min'])
                         V_beta_nrm = np.zeros(V_tract.shape, float)
                         V_beta_nrm[idx] = betas
-                        stats['beta_norm'] = V_beta_nrm
+                        stat_vals['beta_norm'] = V_beta_nrm
                     
                 # Write results volumes
-                
-                dwi_files = {}
-                mni_files = {}
-                
-                for stat in stats:
-                    dwi_files[stat] = '{0}/{1}_dwi_{2}.nii.gz'.format(subj_output_dir, stat, tract_name)
-                    mni_files[stat] = '{0}/{1}_mni_{2}.nii.gz'.format(subj_output_dir, stat, tract_name)
-                    img = nib.Nifti1Image(stats[stat], V_img.affine, V_img.header)
-                    nib.save(img, dwi_files[stat])
+                if success:
+                    dwi_files = {}
+                    mni_files = {}
 
-                for stat in stats:
-                
-                    # Warp back to standard space
-                    smooth_file = '{0}/{1}_mni_sm_{2}um_{3}.nii.gz' \
-                                  .format(subj_output_dir, stat, int(1000.0*params_regress['beta_sm_fwhm']), tract_name)
-                    cmd = '{0} -i {1} -o {2} -r {3} -w {4}' \
-                          .format(fsl_applywarp, dwi_files[stat], mni_files[stat], standard_img, invwarp_file)
-                    err = utils.run_fsl(cmd)
-                    if not params_regress['ignore_errors'] and err:
-                        if verbose:
-                            print('  * Error running fsl_applywarp on {0} for subject {1} on tract {2}. Skipping.' \
-                                .format(stat, subject, tract_name))
-                        failure_count += 1
-                        if debug:
-                            print(cmd)
-                            print(err)
-                        success = False
-                    elif debug and err:
-                        print('  * Error running fsl_applywarp on {0} for subject {1} on tract {2}.' \
-                                .format(stat, subject, tract_name))
-                        print(err)
+                    for stat in stat_vals:
+                        dwi_files[stat] = '{0}/{1}_dwi_{2}.nii.gz'.format(subj_output_dir, stat, tract_name)
+                        mni_files[stat] = '{0}/{1}_mni_{2}.nii.gz'.format(subj_output_dir, stat, tract_name)
+                        img = nib.Nifti1Image(stat_vals[stat], V_img.affine, V_img.header)
+                        nib.save(img, dwi_files[stat])
 
-                    if success:
-                        cmd = '{0} {1} -kernel gauss {2} -fmean {3}' \
-                              .format(fsl_maths, mni_files[stat], params_regress['beta_sm_fwhm']/2.1231, smooth_file)
+                    for stat in stat_vals:
+
+                        # Warp back to standard space
+                        smooth_file = '{0}/{1}_mni_sm_{2}um_{3}.nii.gz' \
+                                      .format(subj_output_dir, stat, int(1000.0*params_regress['beta_sm_fwhm']), tract_name)
+                        cmd = '{0} -i {1} -o {2} -r {3} -w {4}' \
+                              .format(fsl_applywarp, dwi_files[stat], mni_files[stat], standard_img, invwarp_file)
                         err = utils.run_fsl(cmd)
                         if not params_regress['ignore_errors'] and err:
                             if verbose:
-                                print('  * Error running smoothing {0} for subject {1} on tract {2}. Skipping.' \
+                                print('  * Error running fsl_applywarp on {0} for subject {1} on tract {2}. Skipping.' \
                                     .format(stat, subject, tract_name))
                             failure_count += 1
                             if debug:
@@ -1449,55 +1587,73 @@ def process_tsa_subject( subject, my_dwi, verbose=False, debug=False ):
                                 print(err)
                             success = False
                         elif debug and err:
-                            print('  * Error running smoothing {0} for subject {1} on tract {2}.' \
-                                  .format(stat, subject, tract_name))
+                            print('  * Error running fsl_applywarp on {0} for subject {1} on tract {2}.' \
+                                    .format(stat, subject, tract_name))
                             print(err)
 
-                    if success:
-                        cmd = '{0} {1} -mas {2} {3}' \
-                              .format(fsl_maths, mni_files[stat], tract_file_in, mni_files[stat])
-                        err = utils.run_fsl(cmd)
-                        if not params_regress['ignore_errors'] and err:
-                            if verbose:
-                                print('  * Error running masking results for subject {0} on tract {1}. Skipping.' \
-                                    .format(subject, tract_name))
-                            failure_count += 1
-                            if debug:
-                                print(cmd)
-                                print(err)
-                            success = False
-                        elif debug and err:
-                            print('  * Error running masking results {0} for subject {1} on tract {2}.' \
-                                  .format(stat, subject, tract_name))
-                            print(err)
-
-                    if success:
-                        cmd = '{0} {1} -mas {2} {3}' \
-                              .format(fsl_maths, smooth_file, tract_file_in, smooth_file)
-                        err = utils.run_fsl(cmd)
-                        if not params_regress['ignore_errors'] and err:
-                            if verbose:
-                                print('  * Error running masking results for subject {0} on tract {1}. Skipping.' \
-                                    .format(subject, tract_name))
-                            failure_count += 1
-                            if debug:
-                                print(cmd)
-                                print(err)
-                            success = False
-                        elif debug and err:
-                            print(err)
-
-                        # Check if output is there
                         if success:
-                            if not os.path.isfile(mni_files[stat]) or not os.path.isfile(smooth_file):
+                            cmd = '{0} {1} -kernel gauss {2} -fmean {3}' \
+                                  .format(fsl_maths, mni_files[stat], params_regress['beta_sm_fwhm']/2.1231, smooth_file)
+                            err = utils.run_fsl(cmd)
+                            if not params_regress['ignore_errors'] and err:
+                                if verbose:
+                                    print('  * Error running smoothing {0} for subject {1} on tract {2}. Skipping.' \
+                                        .format(stat, subject, tract_name))
+                                failure_count += 1
+                                if debug:
+                                    print(cmd)
+                                    print(err)
+                                success = False
+                            elif debug and err:
+                                print('  * Error running smoothing {0} for subject {1} on tract {2}.' \
+                                      .format(stat, subject, tract_name))
+                                print(err)
+
+                        if success:
+                            cmd = '{0} {1} -mas {2} {3}' \
+                                  .format(fsl_maths, mni_files[stat], tract_file_in, mni_files[stat])
+                            err = utils.run_fsl(cmd)
+                            if not params_regress['ignore_errors'] and err:
                                 if verbose:
                                     print('  * Error running masking results for subject {0} on tract {1}. Skipping.' \
                                         .format(subject, tract_name))
                                 failure_count += 1
+                                if debug:
+                                    print(cmd)
+                                    print(err)
                                 success = False
-                
-                    if not params_regress['retain_dwi']:
-                        os.remove(dwi_files[stat])
+                            elif debug and err:
+                                print('  * Error running masking results {0} for subject {1} on tract {2}.' \
+                                      .format(stat, subject, tract_name))
+                                print(err)
+
+                        if success:
+                            cmd = '{0} {1} -mas {2} {3}' \
+                                  .format(fsl_maths, smooth_file, tract_file_in, smooth_file)
+                            err = utils.run_fsl(cmd)
+                            if not params_regress['ignore_errors'] and err:
+                                if verbose:
+                                    print('  * Error running masking results for subject {0} on tract {1}. Skipping.' \
+                                        .format(subject, tract_name))
+                                failure_count += 1
+                                if debug:
+                                    print(cmd)
+                                    print(err)
+                                success = False
+                            elif debug and err:
+                                print(err)
+
+                            # Check if output is there
+                            if success:
+                                if not os.path.isfile(mni_files[stat]) or not os.path.isfile(smooth_file):
+                                    if verbose:
+                                        print('  * Error running masking results for subject {0} on tract {1}. Skipping.' \
+                                            .format(subject, tract_name))
+                                    failure_count += 1
+                                    success = False
+
+                        if not params_regress['retain_dwi']:
+                            os.remove(dwi_files[stat])
                 
                 if not success and params_regress['fail_on_error']:
                     return failure_count
