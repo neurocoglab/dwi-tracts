@@ -1,9 +1,9 @@
 {
 "general":
    {
-    "preproc_config_file":   "project_full/config_preprocess_dmn.json",
+    "preproc_config_file":   "project/config_preprocess_dmn.json",
     "tracts_config_file":    "project/config_tracts_dmn.json",
-    "covariates_file":       "project_full/nki_demos_all.csv",
+    "covariates_file":       "project/nki_demos_all.csv",
     "standardized_beta":     false,
     "glm_output_dir":        "glms",
     "tract_threshold":       0.4,

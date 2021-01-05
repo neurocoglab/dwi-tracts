@@ -28,13 +28,13 @@
 "qsub":
  	{
 	"use_qsub": 		false,
-	"walltime": 		"70:00:00",
+	"walltime": 		"10:00:00",
 	"select": 			1,
-	"ncpus": 			10,
-	"mem": 				"40gb",
-	"project_id": 		"HPCA-03714-IFR",
-	"temp_dir": 		"/Users/lpzatr/Documents/python/dwi_tracing/tmp",
-	"output_dir":   	"/Users/lpzatr/Documents/python/dwi_tracing/io"
+	"ncpus": 			1,
+	"mem": 				"4gb",
+	"project_id": 		"",
+	"temp_dir": 		"",
+	"output_dir":   	""
 	},
 "probtrackx":
 	{

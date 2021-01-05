@@ -1,7 +1,7 @@
 {
 "general":    
    {
-   "source_dir":      "/Volumes/GDriveUsb/data",
+   "source_dir":      "../data",
    "project_dir":     "nki",
    "deriv_dir":       "derivatives",
    "prefix":          "sub-",
@@ -79,8 +79,8 @@
       "walltime":       "10:00:00",
       "select":         1,
       "ncpus":          1,
-      "mem":            "9gb",
-      "project_id":     "HPCA-03714-IFR",
+      "mem":            "4gb",
+      "project_id":     "",
       "temp_dir":       "tmp",
       "output_dir":     "covariates"
       }
