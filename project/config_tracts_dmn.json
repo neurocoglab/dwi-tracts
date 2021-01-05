@@ -1,9 +1,9 @@
 {
 "general":    
    {
-   "source_dir":      "data",
+   "source_dir":      "/Volumes/GDriveUsb/data",
    "project_dir":     "nki",
-   "deriv_dir":       "deriv",
+   "deriv_dir":       "derivatives",
    "prefix":          "sub-",
    "sub_dirs":        "ses-DS2",
    "rois_dir":        "rois",
@@ -14,33 +14,35 @@
    "tracts_dir":      "tract_stats",
    "output_dir":      "tracts",
    "temp_dir":        "/tmp/dwi",
-   "preproc_config":  "project/config_preprocess.json",
-   "clobber":          false,
+   "preproc_config":  "project/config_preprocess_dmn.json",
+   "clobber":          true,
    "verbose":          true,
    "debug":            true
    },
 "average_tracts":
    {
    "fwhm":             3.5,
-   "bin_thres":        0.01
+   "bin_thres":        0.0
    },
 "gaussians":
    {
-   "threshold":        0.2,
-   "fwhm_axial":       10,
+   "avr_type":         "bin",
+   "threshold":        0.07,
+   "fwhm_axial":       8,
    "fwhm_radial":      4,
    "gauss_max_radius": 8,
-   "max_seg_length":   4,
+   "max_seg_length":   10,
    "max_seg_angle":    0.33333,
    "tract_thresh":     10E-6,
    "fail_constraints": false,
-   "seed_dilate":      1,
-   "mask_dilate":      1
+   "seed_dilate":      3,
+   "mask_dilate":      true
    },
 "average_directions":
    {
    "force_compute":    true,
-   "threshold":        0.2
+   "threshold":        0.1,
+   "use_normalized":   true
    },
 "tract_metrics":
    {
@@ -56,7 +58,8 @@
    "fsl_root":         "/usr/local/fsl",
    "force_compute":    true,
    "force_regress":    true,
-   "covariates_file":  "project/tract_covariates.csv",
+   "use_normalized":   true,
+   "covariates_file":  "project/nki_demos_all.csv",
    "threshold":        0.0,
    "regress_dir":      "regress_dwi",
    "beta_min":         -1,

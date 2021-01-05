@@ -1,12 +1,12 @@
 {
 "general":
    {
-    "preproc_config_file":   "project/config_preprocess.json",
+    "preproc_config_file":   "project_full/config_preprocess_dmn.json",
     "tracts_config_file":    "project/config_tracts_dmn.json",
-    "covariates_file":       "data/nki/metadata/nki_demos.csv",
+    "covariates_file":       "project_full/nki_demos_all.csv",
     "standardized_beta":     false,
     "glm_output_dir":        "glms",
-    "tract_threshold":       0.5,
+    "tract_threshold":       0.4,
     "snet_output_dir":       "snet",
     "summary_metric":        "max",
     "min_clust":             3,
@@ -42,8 +42,37 @@
                 }
             },
       "intercept":          true,
-      "tract_thres":        0.4,
       "outlier_z":          3.5
       }
-   }
+   },
+"traces":
+    {
+    "tract_threshold":       0.5,
+    "cluster_alpha":         0.01,
+    "fdr_method":            "fdr_tsbky",
+    "fdr_alpha":             0.05,
+    "pval_alpha":            0.05,
+    "plot_permutations":     true,
+    "n_permutations":        5000,
+    "max_weight_factor":     1
+    },
+"space-net":
+   {
+    "eps":                   1e-1,
+    "memory":                "nilearn_cache",
+    "penalty":               "graph-net",
+    "cv":                    3
+   },
+"plots":
+    {
+     "chord":
+        {
+         "show_title":       false,
+         "colormap":         "viridis",
+         "replace_text":     "",
+         "min_tcount":       2
+  
+        }
+
+    }
 }
