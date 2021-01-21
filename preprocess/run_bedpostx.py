@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+# Runs BedpostX on a single subject
+
+# Command line arguments to this script:
+# Arg1: subject ID
+# Arg2: configuration file
+
 import subprocess
 from subprocess import Popen, PIPE, STDOUT 
 import shutil
