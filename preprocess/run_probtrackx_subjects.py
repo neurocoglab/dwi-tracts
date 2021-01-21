@@ -35,7 +35,7 @@ def json2obj(data): return json.loads(data, object_hook=_json_object_hook)
 config_file = sys.argv[1];
 
 with open(config_file, 'r') as myfile:
-	json_string=myfile.read() #.replace('\n', '')
+    json_string=myfile.read() #.replace('\n', '')
 
 config = json.loads(json_string)
 config_gen = config['general']
@@ -48,11 +48,11 @@ deriv_dir = '{0}/{1}'.format(config_gen['root_dir'], config_gen['deriv_dir'])
 
 temp_dir = config_gen['temp_dir'];
 if not os.path.isdir(temp_dir):
-	os.makedirs(temp_dir)
+    os.makedirs(temp_dir)
 
 output_dir = config_gen['output_dir']
 if not os.path.isdir(output_dir):
-	os.makedirs(output_dir)
+    os.makedirs(output_dir)
 
 subjects = [];
 with open(subjects_file) as subj_file:
@@ -70,72 +70,72 @@ target_rois = {}
 
 # If this is a JSON file, read as networks and targets
 if config_ptx['roi_list'].endswith('.json'):
-	with open(config_ptx['roi_list'], 'r') as myfile:
-		json_string=myfile.read()
+    with open(config_ptx['roi_list'], 'r') as myfile:
+        json_string=myfile.read()
 
-	netconfig = json.loads(json_string)
-	networks = netconfig['networks']
+    netconfig = json.loads(json_string)
+    networks = netconfig['networks']
 
-	for net in networks:
-		for roi in networks[net]:
-			rois.append(roi)
+    for net in networks:
+        for roi in networks[net]:
+            rois.append(roi)
 
 else:
-	with open(config_ptx['roi_list'],'r') as roi_file:
-		reader = csv.reader(roi_file)
-		for row in reader:
-			rois.append(row[0])
+    with open(config_ptx['roi_list'],'r') as roi_file:
+        reader = csv.reader(roi_file)
+        for row in reader:
+            rois.append(row[0])
 
 rois2do = rois
 if len(sys.argv) > 3:
-	rois2do = [sys.argv[3]]
+    rois2do = [sys.argv[3]]
 
 qos_str = ''
 if len(config_sbatch['qos']) > 0:
-	qos_str = ' --qos={0}'.format(config_sbatch['qos'])
+    qos_str = ' --qos={0}'.format(config_sbatch['qos'])
 
 for subject in subjects:
 
-	if config_gen['verbose']:
-		print('Subject {0}...'.format(subject))
+    if config_gen['verbose']:
+        print('Subject {0}...'.format(subject))
 
-	# Subject-specific paths
-	subj_dir = '{0}/{1}{2}/{3}/dwi' \
-						.format(deriv_dir, config_gen['prefix'], subject, config_gen['session'])
-	probtrackx_dir = '{0}/probtrackX/{1}'.format(subj_dir, config_ptx['network_name'])
+    # Subject-specific paths
+    subj_dir = '{0}/{1}{2}/{3}/dwi' \
+                        .format(deriv_dir, config_gen['prefix'], subject, config_gen['session'])
+    probtrackx_dir = '{0}/probtrackX/{1}'.format(subj_dir, config_ptx['network_name'])
 
-	# Remove existing directory if clobber
-	if not os.path.isdir(probtrackx_dir):
-		os.makedirs(probtrackx_dir)
-	else:
-		if config_gen['clobber']:
-			shutil.rmtree(probtrackx_dir)
-			os.makedirs(probtrackx_dir)
+    # Remove existing directory if clobber
+    if not os.path.isdir(probtrackx_dir):
+        os.makedirs(probtrackx_dir)
+    else:
+        if config_gen['clobber']:
+            shutil.rmtree(probtrackx_dir)
+            os.makedirs(probtrackx_dir)
 
-	for roi in rois2do:
+    for roi in rois2do:
 
-		if config_gen['verbose']:
-			print('ROI: {0}'.format(roi))
-			
-		job_file = config_ptx['job_file']
+        if config_gen['verbose']:
+            print('ROI: {0}'.format(roi))
+            
+        job_file = config_ptx['job_file']
 
-		# Submit to scheduler (unless otherwise specified)
-		if config_sched['submit']:
+        # Submit to scheduler (unless otherwise specified)
+        if config_sched['submit']:
 
-			cmd = '{0} {1} {2} {3} {4}'.format(config_sched['command'], config_ptx['job_file'], \
-											   subject, roi, config_file)
+            cmd = '{0} {1} {2} {3} {4}'.format(config_sched['command'], config_ptx['job_file'], \
+                                               subject, roi, config_file)
 
-			if config_gen['dryrun'] or config_gen['verbose']:
-				print(cmd)
-				
-			if not config_gen['dryrun']:
-				os.system(cmd)
+            if config_gen['dryrun'] or config_gen['verbose']:
+                print(cmd)
+                
+            if not config_gen['dryrun']:
+                os.system(cmd)
 
-		# Run in serial
-		else:
-			cmd = './{0} {1} {2} {3}'.format(config_ptx['job_file'], \
-											 subject, roi, config_file)
-			if not config_gen['dryrun']:
-				os.system(cmd)
-			else:
-				print(cmd)
+        # Run in serial
+        else:
+            cmd = './{0} {1} {2} {3}'.format(config_ptx['job_file'], \
+                                             subject, roi, config_file)
+            if not config_gen['dryrun']:
+                os.system(cmd)
+            else:
+                print(cmd)

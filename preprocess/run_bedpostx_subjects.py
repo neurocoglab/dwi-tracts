@@ -41,7 +41,7 @@ deriv_dir = '{0}/{1}'.format(config_gen['root_dir'], config_gen['deriv_dir'])
 if not os.path.isdir(deriv_dir):
     os.mkdir(deriv_dir)
     if params_gen['verbose']: 
-    	print('Created derivatives dir: {}'.format(deriv_dir))
+        print('Created derivatives dir: {}'.format(deriv_dir))
     
 subjects = [];
 with open(config_gen['subjects_file']) as subj_file:
@@ -50,28 +50,28 @@ with open(config_gen['subjects_file']) as subj_file:
         subjects.append(row[0])
 
 if params_gen['verbose']:            
-	print('Processing {} subjects'.format(len(subjects)))
+    print('Processing {} subjects'.format(len(subjects)))
 
 for subject in subjects:
-	if params_gen['verbose']: 
-    	print('Processing subject/session {}'.format(subject))
+    if params_gen['verbose']: 
+        print('Processing subject/session {}'.format(subject))
 
-	if config_sched['submit']:
-		cmd = '{0} {1} {2} {3}'.format(config_sched['command'], config_bpx['job_file'], \
-    							   subject, config_file)
-		sp = Popen(cmd, shell=True, stderr=subprocess.PIPE)
-		out, err = sp.communicate()
-	else:
-		cmd = './{0} {1} {2}'.format(config_bpx['job_file'], \
-    							   subject, config_file)
-		sp = Popen(cmd, shell=True, stderr=subprocess.PIPE)
-		out, err = sp.communicate()
+    if config_sched['submit']:
+        cmd = '{0} {1} {2} {3}'.format(config_sched['command'], config_bpx['job_file'], \
+                                   subject, config_file)
+        sp = Popen(cmd, shell=True, stderr=subprocess.PIPE)
+        out, err = sp.communicate()
+    else:
+        cmd = './{0} {1} {2}'.format(config_bpx['job_file'], \
+                                   subject, config_file)
+        sp = Popen(cmd, shell=True, stderr=subprocess.PIPE)
+        out, err = sp.communicate()
     
-	if params_gen['verbose']: 
-		if not err:
-			print('  Finished {}'.format(subject))
-		else:
-			print('  {0} failed:\n{1}'.format(subject, err))
-		print('Finished subject {}'.format(subject))
+    if params_gen['verbose']: 
+        if not err:
+            print('  Finished {}'.format(subject))
+        else:
+            print('  {0} failed:\n{1}'.format(subject, err))
+        print('Finished subject {}'.format(subject))
     
     
