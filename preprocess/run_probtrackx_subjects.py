@@ -2,7 +2,8 @@
 
 # Runs ProbtrackX on a list of subjects, by submitting jobs to the local
 # scheduler (supports qsub and sbatch commands). The job file to be run
-# must be called probtrack_job.sh, and must set the scheduler arguments
+# must be called probtrack_job.sh (although this can be specified in the 
+# configuration file), and must set the scheduler arguments
 # (queue, walltime, memory, etc.) and call run_probtrack.py.
 #
 # Requires that BedpostX has already been run for all subjects.

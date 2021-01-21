@@ -1,17 +1,11 @@
 #!/usr/bin/env python
 
-# Runs ProbtrackX on a list of subjects, by submitting jobs to the local
+# Runs BedpostX on a list of subjects, by submitting jobs to the local
 # scheduler (supports qsub and sbatch commands). The job file to be run
-# must be called probtrack_job.sh, and must set the scheduler arguments
-# (queue, walltime, memory, etc.) and call run_probtrack.py.
+# must be called bedpostx_job.sh (although this can be specified in the 
+# configuration file), and must set the scheduler arguments
+# (queue, walltime, memory, etc.) and call run_bedpostx.py.
 #
-# Requires that BedpostX has already been run for all subjects.
-#
-# Target ROI list and other parameters must be specified in a JSON file.
-#
-# By default, all pairs of ROIs in the list are run as seeds; however,
-# will run for only a single ROI if it is passed as the third argument.
-
 # Arguments:
 # Arg1: configuration file
 
