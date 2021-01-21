@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 
 # Runs BedpostX on a list of subjects, by submitting jobs to the local
-# scheduler (supports qsub and sbatch commands). The job file to be run
-# must be called bedpostx_job.sh (although this can be specified in the 
-# configuration file), and must set the scheduler arguments
-# (queue, walltime, memory, etc.) and call run_bedpostx.py.
+# scheduler. The job file to be run must be called bedpostx_job.sh (although 
+# this can be specified in the configuration file), and must set the scheduler 
+# arguments (queue, walltime, memory, etc.) and call run_bedpostx.py.
 #
 # Arguments:
 # Arg1: configuration file
