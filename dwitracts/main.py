@@ -899,10 +899,8 @@ class DwiTracts:
                     V_blobs = utils.label_blobs(V, threshold)
                     if len(np.unique(V_blobs)) > 2:
                         V_blobs = utils.retain_adjacent_blobs(V_blobs, [V_rois[roi_a], V_rois[roi_b]])
-                        if len(np.unique(V_blobs)) > 2:
+                        if len(np.unique(V_blobs)) > 1:
                             print('  * Tract has multiple tract segments (unfixed): {0}|{1}'.format(roi_a, roi_b))
-                        elif len(np.unique(V_blobs)) == 1:
-                            print('  * Tract had multiple tract segments (1 retained): {0}|{1}'.format(roi_a, roi_b))
                         else:
                             print('  * Tract had multiple tract segments (none retained): {0}|{1}'.format(roi_a, roi_b))
                         V = np.multiply(V, V_blobs>0)
@@ -1522,13 +1520,13 @@ def process_tsa_subject( subject, my_dwi, verbose=False, debug=False ):
                         b0   = b0_d[vv]
                         yy   = dwi_d[vv,:] / b0
                         # z-score
-                        yy = stats.zscore(yy, nan_policy='raise')
+#                         yy = stats.zscore(yy, nan_policy='raise')
                         bb   = b_d
                         dd   = diff_d[vv]
                         xTv  = np.matmul(v_d[vv,:],x_d.T)
                         xx   = np.exp(-(((bb*dd) * xTv)**2))
                         # z-score
-                        xx   = stats.zscore(xx, nan_policy='raise')
+#                         xx   = stats.zscore(xx, nan_policy='raise')
                         xx   = sm.add_constant(xx, has_constant='add')
 
                         results = sm.OLS(yy, xx).fit()
