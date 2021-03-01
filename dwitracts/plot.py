@@ -33,6 +33,8 @@ def plot_tsa_histograms( params, my_dwi, tract_names=None, threshold=0.5, verbos
     sns.set(style="white", palette="muted", color_codes=True)
     plot_face_clr = [1,1,1]
     
+    img_format = params['image_format']
+    
     if tract_names is None:
         # Use all valid tracts
         tract_names = my_dwi.tracts_final_bidir
@@ -148,9 +150,9 @@ def plot_tsa_histograms( params, my_dwi, tract_names=None, threshold=0.5, verbos
     dpi = 300
     if 'dpi_tracts' in params:
         dpi = params['dpi_tracts']
-    output_file = '{0}/histogram_tsa_{1}_tracts_thr_0{2}.png'.format( \
-                                        figures_dir, network_name, round(threshold*100) )
-    plt.savefig( output_file, facecolor=plot_face_clr, transparent=True, dpi=dpi )
+    output_file = '{0}/histogram_tsa_{1}_tracts_thr_0{2}.{3}'.format( \
+                                        figures_dir, network_name, round(threshold*100), img_format )
+    plt.savefig( output_file, facecolor=plot_face_clr, transparent=True, dpi=dpi, format=img_format )
     plt.close()
         
     # Plot histogram for all tracts
@@ -178,12 +180,15 @@ def plot_tsa_histograms( params, my_dwi, tract_names=None, threshold=0.5, verbos
     if params['show_title']:
         fig.suptitle('Histograms - All Tracts ({0})'.format(network_name))
 
-    output_file = '{0}/histogram_tsa_{1}_all_thr_0{2}.png'.format( figures_dir, network_name, round(threshold*100) )
+    output_file = '{0}/histogram_tsa_{1}_all_thr_0{2}.{3}'.format( figures_dir, network_name, round(threshold*100), img_format )
     
     dpi = 300
     if 'dpi_all' in params:
         dpi = params['dpi_all']
-    plt.savefig( output_file, facecolor=plot_face_clr, transparent=True, dpi=dpi )
+    
+    if img_format is 'svg':
+        plt.rcParams['svg.fonttype'] = 'none'
+    plt.savefig( output_file, facecolor=plot_face_clr, transparent=True, dpi=dpi, format=img_format )
     plt.close()
 
     if verbose:
@@ -218,6 +223,9 @@ def plot_distance_traces( params, tract_names, alpha=0.5, stat_type='uncorrected
     plt.rc('figure', titlesize=params['title_font'])
     plt.rc('xtick', labelsize=params['xticklabel_font'])
     plt.rc('ytick', labelsize=params['yticklabel_font']) 
+    
+    if params['image_format'] is 'svg':
+        plt.rcParams['svg.fonttype'] = 'none'
 
     metric = params_gen['summary_metric']
     tract_thresh = params['traces']['tract_threshold']
@@ -287,7 +295,9 @@ def plot_distance_traces( params, tract_names, alpha=0.5, stat_type='uncorrected
             sx = ''
             if stat_type=='fdr' or stat_type=='rft' or stat_type=='perm':
                 sx = '_{0}'.format(stat_type)
-            plt.savefig('{0}/lines_{1}{2}.png'.format(figures_dir, factor_str, sx))
+            
+            plt.savefig('{0}/lines_{1}{2}.{3}'.format(figures_dir, factor_str, sx, params['image_format']), \
+                        format=params['image_format'])
 #             plt.show()
 
 # Plot the distance-wise results of GLM analyses for each GLM, factor, and tract. 
@@ -368,6 +378,8 @@ def plot_glm_results( params, my_glm, verbose=False ):
     params_trace = my_glm.params['traces']
     tract_thresh = params_trace['tract_threshold']
     thresh_str = '{0:02d}'.format(round(tract_thresh*100))
+    
+    img_format = params['image_format']
     
     source_dir = params_tracts['general']['source_dir']
     project_dir = os.path.join(source_dir, params_tracts['general']['project_dir'])
@@ -716,9 +728,10 @@ def plot_glm_results( params, my_glm, verbose=False ):
             suffix = '_{0}'.format(stat_type)
 
 #         plt.tight_layout()
-        plt.savefig( '{0}/scatter_{1}_{2}{3}.png'.format( figures_dir, factor_str, tract_name, suffix ), \
+        plt.savefig( '{0}/scatter_{1}_{2}{3}.{4}'.format( figures_dir, factor_str, tract_name, suffix, img_format ), \
                      facecolor=plot_face_clr, \
-                     transparent=True )
+                     transparent=True, \
+                     format=img_format)
         
         plt.close()
         
@@ -789,9 +802,10 @@ def plot_glm_results( params, my_glm, verbose=False ):
             suffix = '_{0}'.format(stat_type)
         
 #         plt.tight_layout()
-        plt.savefig( '{0}/scatter_{1}_{2}{3}.png'.format( figures_dir, factor, tract_name, suffix ), \
+        plt.savefig( '{0}/scatter_{1}_{2}{3}.{4}'.format( figures_dir, factor, tract_name, suffix, img_format ), \
                      facecolor=plot_face_clr, \
-                     transparent=True )
+                     transparent=True, \
+                     format=img_format)
         
         plt.close()
                                     
@@ -886,9 +900,10 @@ def plot_glm_results( params, my_glm, verbose=False ):
             suffix = '_{0}'.format(stat_type)
         
 #         plt.tight_layout()
-        plt.savefig( '{0}/violin_{1}_{2}{3}.png'.format( figures_dir, factor_str, tract_name, suffix ), \
+        plt.savefig( '{0}/violin_{1}_{2}{3}.{4}'.format( figures_dir, factor_str, tract_name, suffix, img_format ), \
                      facecolor=plot_face_clr, \
-                     transparent=True )
+                     transparent=True, \
+                     format=img_format)
         
         plt.close()
 
@@ -948,6 +963,7 @@ def plot_glm_results( params, my_glm, verbose=False ):
 #                      axis_font:      Font size for axis text
 #                      ticklabel_font: Font size for tick labels
 #                      title_font:     Font size for figure titles
+#                      image_format:   Output format for plots
 # my_glm:           DwiTractsGlm object specifying the GLMs and data structures  
 # nbins:            Number of bins to use in histograms
 # verbose:          Whether to print progress to screen
