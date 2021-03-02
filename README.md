@@ -63,7 +63,7 @@ Development of a detailed API, including parameter specifications for all functi
 
 [FSL software](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation) (preferably v6.0 or later) must be installed on your system, as well as the computing cluster if you are running the preprocessing steps there.
 
-[rft1d](https://github.com/neurocoglab/rft1d) is necessary for 1D random field theory functionality. Note, it is forked from the [original repository](https://github.com/0todd0000/rft1d) in order to work with Python 3.
+The [rft1d](https://github.com/neurocoglab/rft1d) package is necessary for 1D random field theory functionality. Note, it is forked from the [original repository](https://github.com/0todd0000/rft1d) in order to work with Python 3.
 
 These dependencies are included in [Anaconda](https://docs.anaconda.com/anaconda/install/) builds (recommended):
 * [pandas](https://pandas.pydata.org/pandas-docs/stable/getting_started/install.html)
