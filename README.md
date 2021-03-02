@@ -40,7 +40,7 @@ Two [Jupyter notebooks](https://jupyter.org/) are provided to demonstrate the us
 * **GLM Analysis**: This runs all GLM analyses on the generated tract and TSA values:
     * Fitting GLMs
     * Extracting distance-wise GLM statistics
-    * Performing 1D RFT inference
+    * Performing 1D RFT inference and (optional) FDR correction
     * Generating t-value trace plots
     * Generating scatter and violin plots of GLM results
     * Generating aggregate tract and statistics images
