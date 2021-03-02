@@ -6,7 +6,7 @@ DWI probabilistic tractography-based tract-specific metrics
 
 * Preprocessing pipeline for DWI data, based on the [FMRIB software library (FSL)](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki), and in particular the [FMRIB diffusion toolbox (FDT)](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FDT)
 * The identification of "core" tract trajectories based on probabilistic tractography from a sample of individuals representing a target population, and an arbitrary set of grey matter regions-of-interest (ROIs)
-* The quantification of fractional participant- and tract-specific diffusion on the basis of average streamline orientations (tract-specific anisotropy; TSA)
+* The estimation of participant- and tract-specific diffusion statistics on the basis of average streamline orientations (tract-specific anisotropy; TSA)
 * Linear regression analysis of TSA results, given a set of metadata; this includes cluster-based inference based on one-dimensional random field theory and control of false discovery rate (FDR)
 
 The relevant theory and implementation are described in more detail in this preprint.
