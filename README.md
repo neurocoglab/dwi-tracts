@@ -46,6 +46,14 @@ Two [Jupyter notebooks](https://jupyter.org/) are provided to demonstrate the us
     * Generating aggregate tract and statistics images
     * Generating GLM t-value sum graphs in Pajek format
 
+It is recommended that you make a copy of these notebooks, and copy the "data" and "project" folders to a location other that the repository directory.
+
+To run a notebook, navigate to the source folder using a terminal window, and type:
+
+`jupyter notebook`
+
+which will start the notebook. You can then sequentially run the cells in the notebook. Use the `verbose` argument to most functions in order to get detailed console feedback.
+
 This also currently serves as a test function for the correct installation of the software.
 
 # Documentation
