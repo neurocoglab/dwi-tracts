@@ -25,7 +25,26 @@ The software is organised into several components:
 The dependencies listed below will also have to be installed on your system. An [Anaconda](https://anaconda.org/anaconda) installation of Python 3 is highly recommended, although not necessary.
 
 # Getting started
-Two Jupyter notebooks are provided to demonstrate the use of the software, using the [Enhanced NKI Rockland](http://fcon_1000.projects.nitrc.org/indi/enhanced/) sample as a demo dataset (see the "project" folder for examples of the required parameters, specified as JSON files). 
+Two [Jupyter notebooks](https://jupyter.org/) are provided to demonstrate the use of the software, using the [Enhanced NKI Rockland](http://fcon_1000.projects.nitrc.org/indi/enhanced/) sample as a demo dataset (see the "project" folder for examples of the required parameters, specified as JSON files).
+
+* **Compute Tract Metrics**: This runs all the steps after preprocessing has been performed, including:
+    * Computing bidirectional average distributions
+    * Computing tract distances
+    * Estimating unidirectional tracts
+    * Estimating bidirectional tracts
+    * Generating a pass/fail graph in [Pajek](http://vlado.fmf.uni-lj.si/pub/networks/pajek/) format
+    * Computing average streamline orientations
+    * Computing TSA values
+    * Generating average TSA images in [NIFTI](https://nifti.nimh.nih.gov/nifti-1/) format
+    * Generating TSA histogram plots
+* **GLM Analysis**: This runs all GLM analyses on the generated tract and TSA values:
+    * Fitting GLMs
+    * Extracting distance-wise GLM statistics
+    * Performing 1D RFT inference
+    * Generating t-value trace plots
+    * Generating scatter and violin plots of GLM results
+    * Generating aggregate tract and statistics images
+    * Generating GLM t-value sum graphs in Pajek format
 
 This also currently serves as a test function for the correct installation of the software.
 
