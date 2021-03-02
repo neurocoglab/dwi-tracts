@@ -61,6 +61,8 @@ Development of a detailed API, including parameter specifications for all functi
 
 # Dependencies
 
+[FSL software](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation) (preferably v6.0 or later) must be installed on your system, as well as the computing cluster if you are running the preprocessing steps there.
+
 These dependencies are included in [Anaconda](https://docs.anaconda.com/anaconda/install/) builds (recommended):
 * [pandas](https://pandas.pydata.org/pandas-docs/stable/getting_started/install.html)
 * [matplotlib](https://anaconda.org/conda-forge/matplotlib)
