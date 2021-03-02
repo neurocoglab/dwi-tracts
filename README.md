@@ -2,7 +2,7 @@
 DWI probabilistic tractography-based tract-specific metrics
 
 # Overview
-dwi-tracts implements four main functions:
+**dwi-tracts** implements four main functions:
 
 * Preprocessing pipeline for DWI data, based on the [FMRIB software library (FSL)](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki), and in particular the [FMRIB diffusion toolbox (FDT)](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FDT)
 * The identification of "core" tract trajectories based on probabilistic tractography from a sample of individuals representing a target population
@@ -20,7 +20,7 @@ The software is organised into several components:
 * **utils**: Utility functions required for the other components
 
 # Installation
-dwi-tracts can be cloned from this Github repository. 
+**dwi-tracts** can be cloned from this Github repository. 
 
 The dependencies listed below will also have to be installed on your system. An [Anaconda](https://anaconda.org/anaconda) installation of Python 3 is highly recommended, although not necessary.
 
