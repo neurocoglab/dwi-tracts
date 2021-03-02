@@ -9,7 +9,7 @@ DWI probabilistic tractography-based tract-specific metrics
 * The estimation of participant- and tract-specific diffusion statistics on the basis of average streamline orientations (tract-specific anisotropy; TSA)
 * Linear regression analysis of TSA results, given a set of metadata; this includes cluster-based inference based on one-dimensional random field theory and control of the false discovery rate (FDR)
 
-The relevant theory and implementation are described in more detail in this preprint.
+The relevant theory, implementation, and output are described in more detail in this preprint.
 
 The software is organised into several components:
 
