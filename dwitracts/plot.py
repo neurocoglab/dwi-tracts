@@ -33,6 +33,8 @@ def plot_tsa_histograms( params, my_dwi, tract_names=None, threshold=0.5, verbos
     sns.set(style="white", palette="muted", color_codes=True)
     plot_face_clr = [1,1,1]
     
+    img_format = params['image_format']
+    
     if tract_names is None:
         # Use all valid tracts
         tract_names = my_dwi.tracts_final_bidir
@@ -148,9 +150,9 @@ def plot_tsa_histograms( params, my_dwi, tract_names=None, threshold=0.5, verbos
     dpi = 300
     if 'dpi_tracts' in params:
         dpi = params['dpi_tracts']
-    output_file = '{0}/histogram_tsa_{1}_tracts_thr_0{2}.png'.format( \
-                                        figures_dir, network_name, round(threshold*100) )
-    plt.savefig( output_file, facecolor=plot_face_clr, transparent=True, dpi=dpi )
+    output_file = '{0}/histogram_tsa_{1}_tracts_thr_0{2}.{3}'.format( \
+                                        figures_dir, network_name, round(threshold*100), img_format )
+    plt.savefig( output_file, facecolor=plot_face_clr, transparent=True, dpi=dpi, format=img_format )
     plt.close()
         
     # Plot histogram for all tracts
@@ -178,12 +180,15 @@ def plot_tsa_histograms( params, my_dwi, tract_names=None, threshold=0.5, verbos
     if params['show_title']:
         fig.suptitle('Histograms - All Tracts ({0})'.format(network_name))
 
-    output_file = '{0}/histogram_tsa_{1}_all_thr_0{2}.png'.format( figures_dir, network_name, round(threshold*100) )
+    output_file = '{0}/histogram_tsa_{1}_all_thr_0{2}.{3}'.format( figures_dir, network_name, round(threshold*100), img_format )
     
     dpi = 300
     if 'dpi_all' in params:
         dpi = params['dpi_all']
-    plt.savefig( output_file, facecolor=plot_face_clr, transparent=True, dpi=dpi )
+    
+    if img_format is 'svg':
+        plt.rcParams['svg.fonttype'] = 'none'
+    plt.savefig( output_file, facecolor=plot_face_clr, transparent=True, dpi=dpi, format=img_format )
     plt.close()
 
     if verbose:
@@ -218,6 +223,9 @@ def plot_distance_traces( params, tract_names, alpha=0.5, stat_type='uncorrected
     plt.rc('figure', titlesize=params['title_font'])
     plt.rc('xtick', labelsize=params['xticklabel_font'])
     plt.rc('ytick', labelsize=params['yticklabel_font']) 
+    
+    if params['image_format'] is 'svg':
+        plt.rcParams['svg.fonttype'] = 'none'
 
     metric = params_gen['summary_metric']
     tract_thresh = params['traces']['tract_threshold']
@@ -287,7 +295,9 @@ def plot_distance_traces( params, tract_names, alpha=0.5, stat_type='uncorrected
             sx = ''
             if stat_type=='fdr' or stat_type=='rft' or stat_type=='perm':
                 sx = '_{0}'.format(stat_type)
-            plt.savefig('{0}/lines_{1}{2}.png'.format(figures_dir, factor_str, sx))
+            
+            plt.savefig('{0}/lines_{1}{2}.{3}'.format(figures_dir, factor_str, sx, params['image_format']), \
+                        format=params['image_format'])
 #             plt.show()
 
 # Plot the distance-wise results of GLM analyses for each GLM, factor, and tract. 
@@ -303,13 +313,17 @@ def plot_distance_traces( params, tract_names, alpha=0.5, stat_type='uncorrected
 #                      axis_font:      Font size for axis text
 #                      ticklabel_font: Font size for tick labels
 #                      title_font:     Font size for figure titles
+#                      write_csv:      Whether to output the +/- betas as a CSV file
 # my_glm:           DwiTractsGlm object specifying the GLMs and data structures  
 # verbose:          Whether to print progress to screen
+#
 #
 def plot_glm_results_all( params, my_glm, verbose=False ):
     
     for tract in tqdm_notebook(my_glm.tract_names, 'Generating plots'):
         params['tract_name'] = tract
+        if verbose:
+            print('Tract {0}'.format(tract))
         plot_glm_results( params, my_glm, verbose )
     
 
@@ -337,6 +351,7 @@ def plot_glm_results_all( params, my_glm, verbose=False ):
 #                      axis_font:      Font size for axis text
 #                      ticklabel_font: Font size for tick labels
 #                      title_font:     Font size for figure titles
+#                      write_csv:      Whether to output the +/- betas as a CSV file
 # my_glm:           DwiTractsGlm object specifying the GLMs and data structures  
 # verbose:          Whether to print progress to screen
 #
@@ -364,6 +379,8 @@ def plot_glm_results( params, my_glm, verbose=False ):
     tract_thresh = params_trace['tract_threshold']
     thresh_str = '{0:02d}'.format(round(tract_thresh*100))
     
+    img_format = params['image_format']
+    
     source_dir = params_tracts['general']['source_dir']
     project_dir = os.path.join(source_dir, params_tracts['general']['project_dir'])
     tracts_dir = os.path.join(project_dir, params_tracts['general']['tracts_dir'], params_tracts['general']['network_name'])
@@ -374,6 +391,7 @@ def plot_glm_results( params, my_glm, verbose=False ):
     output_dir = '{0}/summary-{1}_thr{2}'.format(glm_dir, metric, thresh_str)
 
     tract_name = params['tract_name']
+    write_csv = params['write_csv']
     stats_file = '{0}/stats_{1}.csv'.format(output_dir, tract_name)
     if not os.path.isfile(stats_file):
         if verbose:
@@ -658,15 +676,13 @@ def plot_glm_results( params, my_glm, verbose=False ):
         else:
             figsize=(figsize[0]*n_rows, figsize[1])
         
-        fig, axs = plt.subplots(1, n_rows, sharey=True, figsize=figsize)
+        fig, axs = plt.subplots(1, n_rows, sharey=False, figsize=figsize)
 #         fig, axs = plt.subplots(n_rows, 1, sharey=True, figsize=figsize)
     
         if n_rows == 1:
             axs = np.array([axs])
            
-        if show_title:
-            fig.suptitle('TSA v. {0} by {1}: {2}'.format(fac2, fac1, tract_name))
-            
+               
         # Sort variables by X2
         X2 = X[:,i2]
         idx = np.argsort(X2)
@@ -700,14 +716,22 @@ def plot_glm_results( params, my_glm, verbose=False ):
             if params['show_legend']:
                 ax.legend(loc='lower right')
         
+        if show_title:
+            fig.suptitle(tract_name)
+            plt.subplots_adjust(top=0.9, left=0.15, right=0.9, bottom=0.15, wspace=0.25)
+        else:
+            plt.tight_layout()
+     
+        
         suffix = ''
         if stat_type != 'uncorrected':
             suffix = '_{0}'.format(stat_type)
 
-        plt.tight_layout()
-        plt.savefig( '{0}/scatter_{1}_{2}{3}.png'.format( figures_dir, factor_str, tract_name, suffix ), \
+#         plt.tight_layout()
+        plt.savefig( '{0}/scatter_{1}_{2}{3}.{4}'.format( figures_dir, factor_str, tract_name, suffix, img_format ), \
                      facecolor=plot_face_clr, \
-                     transparent=True )
+                     transparent=True, \
+                     format=img_format)
         
         plt.close()
         
@@ -736,13 +760,10 @@ def plot_glm_results( params, my_glm, verbose=False ):
         else:
             figsize=(figsize[0]*n_rows, figsize[1])
             
-        fig, axs = plt.subplots(1, n_rows, sharey=True, figsize=figsize)
+        fig, axs = plt.subplots(1, n_rows, sharey=False, figsize=figsize)
         if n_rows == 1:
             axs = np.array([axs])
-            
-        if show_title:
-            fig.suptitle('TSA v. {0}: {1}'.format(factor, tract_name))
-        
+       
         i1 = factors.index(factor)
         X1 = X[:,i1]
         idx = np.argsort(X1)
@@ -763,21 +784,28 @@ def plot_glm_results( params, my_glm, verbose=False ):
                 axs[idx_row].plot(x, y_est)
                 axs[idx_row].fill_between(x, ci[0,:], ci[1,:], alpha=0.2)
                 axs[idx_row].plot(x, y, 'bo', linewidth=0)
-                if show_title:
-                    axs[idx_row].set_title('{0} association'.format(title))
+#                 if show_title:
+#                     axs[idx_row].set_title('{0} association'.format(title))
                 idx_row += 1
   
         for ax in axs.flat:
             ax.set(xlabel=factor, ylabel='TSA')
+            
+        if show_title:
+            fig.suptitle(tract_name)
+            plt.subplots_adjust(top=0.9, left=0.15, right=0.9, bottom=0.15, wspace=0.25)
+        else:
+            plt.tight_layout()
         
         suffix = ''
         if stat_type != 'uncorrected':
             suffix = '_{0}'.format(stat_type)
         
-        plt.tight_layout()
-        plt.savefig( '{0}/scatter_{1}_{2}{3}.png'.format( figures_dir, factor, tract_name, suffix ), \
+#         plt.tight_layout()
+        plt.savefig( '{0}/scatter_{1}_{2}{3}.{4}'.format( figures_dir, factor, tract_name, suffix, img_format ), \
                      facecolor=plot_face_clr, \
-                     transparent=True )
+                     transparent=True, \
+                     format=img_format)
         
         plt.close()
                                     
@@ -835,9 +863,6 @@ def plot_glm_results( params, my_glm, verbose=False ):
         
         fig, axs = plt.subplots(1, n_rows, sharey=True, figsize=figsize)
         
-        if show_title:
-            fig.suptitle('TSA [{0} v. {1}]: {2}'.format(lnames[0], lnames[1], tract_name))
-        
         titles = ['{0} > {1}'.format(lnames[1], lnames[0]), '{0} > {1}'.format(lnames[0], lnames[1])]
         
         idx_a = 0;
@@ -859,19 +884,26 @@ def plot_glm_results( params, my_glm, verbose=False ):
                     v.set_alpha(0.3)
                 sns.stripplot(x=factor_str, y='TSA', ax=axis, data=df, order=lnames, s=params['marker_size'])
                 
-                if show_title:
-                    axis.set_title(titles[t])
+#                 if show_title:
+#                     axis.set_title(titles[t])
 
                 idx_a += 1   
-         
+        
+        if show_title:
+            fig.suptitle(tract_name)
+            plt.subplots_adjust(top=0.9, left=0.15, right=0.9, bottom=0.1)
+        else:
+            plt.tight_layout()
+        
         suffix = ''
         if stat_type != 'uncorrected':
             suffix = '_{0}'.format(stat_type)
         
-        plt.tight_layout()
-        plt.savefig( '{0}/violin_{1}_{2}{3}.png'.format( figures_dir, factor_str, tract_name, suffix ), \
+#         plt.tight_layout()
+        plt.savefig( '{0}/violin_{1}_{2}{3}.{4}'.format( figures_dir, factor_str, tract_name, suffix, img_format ), \
                      facecolor=plot_face_clr, \
-                     transparent=True )
+                     transparent=True, \
+                     format=img_format)
         
         plt.close()
 
@@ -893,8 +925,13 @@ def plot_glm_results( params, my_glm, verbose=False ):
     factors = params_glm[glm]['factors'].copy()
     if 'Intercept' in factors:
         factors.remove('Intercept')
+        
+    df_betas = None
+    if write_csv:
+        df_betas = pd.DataFrame({'subject_id': my_glm.subjects})
     
     for factor in factors:
+        
         betas_pos, betas_neg = get_average_betas( factor, V_betas, V_dist, V_tract, idx_tract )
         cneg = np.count_nonzero(np.isnan(betas_neg))
         cpos = np.count_nonzero(np.isnan(betas_pos))
@@ -905,6 +942,16 @@ def plot_glm_results( params, my_glm, verbose=False ):
 #             print('{0}[{1}]: {2} pos, {3} neg'.format(tract_name, factor, np.count_nonzero(betas_pos), \
 #                                                                           np.count_nonzero(betas_neg)))
         plot_factor( factor, betas_pos, betas_neg, show_title=params['show_title'], figsize=params['dimensions'] )
+        if df_betas is not None:
+            factor_str = factor.replace('*','X')
+            dfi = pd.DataFrame({'{0}_pos'.format(factor_str): betas_pos, '{0}_neg'.format(factor_str): betas_neg})
+            df_betas = df_betas.join(dfi)
+    
+    if df_betas is not None:
+        out_file = '{0}/avr_betas_{1}.csv'.format(figures_dir, tract_name)
+        df_betas.to_csv(out_file)
+        if verbose:
+            print('   Wrote average TSA values to {0}.'.format(out_file))
         
     return True
     
@@ -916,6 +963,7 @@ def plot_glm_results( params, my_glm, verbose=False ):
 #                      axis_font:      Font size for axis text
 #                      ticklabel_font: Font size for tick labels
 #                      title_font:     Font size for figure titles
+#                      image_format:   Output format for plots
 # my_glm:           DwiTractsGlm object specifying the GLMs and data structures  
 # nbins:            Number of bins to use in histograms
 # verbose:          Whether to print progress to screen

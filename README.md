@@ -1,7 +1,67 @@
 # dwi-tracts
 DWI probabilistic tractography-based tract-specific metrics
 
+# Overview
+**dwi-tracts** implements four main functions:
+
+* Preprocessing pipeline for DWI data, based on the [FMRIB software library (FSL)](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki), and in particular the [FMRIB diffusion toolbox (FDT)](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FDT)
+* The identification of "core" tract trajectories based on probabilistic tractography from a sample of individuals representing a target population, and an arbitrary set of grey matter regions-of-interest (ROIs)
+* The estimation of participant- and tract-specific diffusion statistics on the basis of average streamline orientations (tract-specific anisotropy; TSA)
+* Linear regression analysis of TSA results, given a set of metadata; this includes cluster-based inference based on one-dimensional random field theory and control of the false discovery rate (FDR)
+
+The relevant theory, implementation, and output are described in more detail in this preprint.
+
+The software is organised into several components:
+
+* **preprocess**: All preprocessing pipeline functions, including support for parallel computing
+* **main**: Tract trajectory determination, TSA derivation
+* **glm**: Linear regression analysis of TSA values
+* **plot**: Plotting functions, based on the [Matplotlib](https://matplotlib.org/) and [Seaborn](https://seaborn.pydata.org/) APIs
+* **utils**: Utility functions required for the other components
+
+# Installation
+**dwi-tracts** can be cloned from this Github repository. 
+
+The dependencies listed below will also have to be installed on your system. An [Anaconda](https://anaconda.org/anaconda) installation of Python 3 is highly recommended, although not necessary.
+
+# Getting started
+Two [Jupyter notebooks](https://jupyter.org/) are provided to demonstrate the use of the software, using two participants from the [Enhanced NKI Rockland](http://fcon_1000.projects.nitrc.org/indi/enhanced/) sample as a demo dataset (see the "project" folder for examples of the required parameters, specified as JSON files).
+
+* **Compute Tract Metrics**: This runs all the steps after preprocessing has been performed, including:
+    * Computing bidirectional average distributions
+    * Computing tract distances
+    * Estimating unidirectional tracts
+    * Estimating bidirectional tracts
+    * Generating a pass/fail graph in [Pajek](http://vlado.fmf.uni-lj.si/pub/networks/pajek/) format
+    * Computing average streamline orientations
+    * Computing TSA values
+    * Generating average TSA images in [NIFTI](https://nifti.nimh.nih.gov/nifti-1/) format
+    * Generating TSA histogram plots
+* **GLM Analysis**: This runs all GLM analyses on the generated tract and TSA values:
+    * Fitting GLMs
+    * Extracting distance-wise GLM statistics
+    * Performing 1D RFT inference and (optional) FDR correction
+    * Generating t-value trace plots
+    * Generating scatter and violin plots of GLM results
+    * Generating aggregate tract and statistics images
+    * Generating GLM t-value sum graphs in Pajek format
+
+It is recommended that you make a copy of these notebooks, and copy the "data" and "project" folders to a location other that the repository directory.
+
+To run a notebook, navigate to the source folder using a terminal window, and type:
+
+`jupyter notebook`
+
+which will start the notebook in your web browser. You can then sequentially run the cells in the notebook. Use the `verbose` argument to most functions in order to get detailed console feedback.
+
+This also currently serves as a test function for the correct installation of the software.
+
+# Documentation
+Development of a detailed API, including parameter specifications for all functions, is in expected by the end of March, 2021. A Wiki guide is also in the works.
+
 # Dependencies
+
+[FSL software](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation) (preferably v6.0 or later) must be installed on your system, as well as the computing cluster if you are running the preprocessing steps there.
 
 These dependencies are included in [Anaconda](https://docs.anaconda.com/anaconda/install/) builds (recommended):
 * [pandas](https://pandas.pydata.org/pandas-docs/stable/getting_started/install.html)
