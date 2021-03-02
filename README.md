@@ -13,11 +13,11 @@ The relevant theory and implementation are described in more detail in this prep
 
 The software is organised into several components:
 
-* preprocess: All preprocessing pipeline functions, including support for parallel computing
-* main: Tract trajectory determination, TSA derivation
-* glm: Linear regression analysis of TSA values
-* plot: Plotting functions, based on the [Matplotlib](https://matplotlib.org/) and [Seaborn](https://seaborn.pydata.org/) APIs
-* utils: Utility functions required for the other components
+* **preprocess**: All preprocessing pipeline functions, including support for parallel computing
+* **main**: Tract trajectory determination, TSA derivation
+* **glm**: Linear regression analysis of TSA values
+* **plot**: Plotting functions, based on the [Matplotlib](https://matplotlib.org/) and [Seaborn](https://seaborn.pydata.org/) APIs
+* **utils**: Utility functions required for the other components
 
 # Installation
 dwi-tracts can be cloned from this Github repository. 
