@@ -52,7 +52,7 @@ To run a notebook, navigate to the source folder using a terminal window, and ty
 
 `jupyter notebook`
 
-which will start the notebook. You can then sequentially run the cells in the notebook. Use the `verbose` argument to most functions in order to get detailed console feedback.
+which will start the notebook in your web browser. You can then sequentially run the cells in the notebook. Use the `verbose` argument to most functions in order to get detailed console feedback.
 
 This also currently serves as a test function for the correct installation of the software.
 
