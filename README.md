@@ -81,4 +81,4 @@ These need to be installed separately:
 
 If you use this code in your research, please consider citing the preprint:
 
-Reid AT, Camilleri JA, Hoffstaedter F, Eickhoff SB (2021). Tract-specific statistics based on diffusion-weighted probabilistic tractography. bioRxiv. doi: 10.1101/2021.03.05.434061v1
+Reid AT, Camilleri JA, Hoffstaedter F, Eickhoff SB (2021). Tract-specific statistics based on diffusion-weighted probabilistic tractography. bioRxiv. doi: [10.1101/2021.03.05.434061v1](https://doi.org/10.1101/2021.03.05.434061)
