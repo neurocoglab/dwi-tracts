@@ -1,5 +1,9 @@
 # dwi-tracts
-DWI probabilistic tractography-based tract-specific metrics
+DWI probabilistic tractography-based tract-specific metrics. This repository is the Python implementation of the procedures described in [this preprint](https://doi.org/10.1101/2021.03.05.434061).
+
+If you use this code in your research, please consider citing the preprint:
+
+Reid AT, Camilleri JA, Hoffstaedter F, Eickhoff SB (2021). Tract-specific statistics based on diffusion-weighted probabilistic tractography. bioRxiv. doi: 10.1101/2021.03.05.434061v1
 
 # Overview
 **dwi-tracts** implements four main functions:
