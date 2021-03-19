@@ -24,6 +24,24 @@ The software is organised into several components:
 
 The dependencies listed below will also have to be installed on your system. An [Anaconda](https://anaconda.org/anaconda) installation of Python 3 is highly recommended, although not necessary.
 
+# Dependencies
+
+[FSL software](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation) (preferably v6.0 or later) must be installed on your system, as well as the computing cluster if you are running the preprocessing steps there.
+
+The [rft1d](https://github.com/neurocoglab/rft1d) package is necessary for 1D random field theory functionality. Note, it is forked from the [original repository](https://github.com/0todd0000/rft1d) in order to work with Python 3.
+
+These dependencies are included in [Anaconda](https://docs.anaconda.com/anaconda/install/) builds (recommended):
+* [pandas](https://pandas.pydata.org/pandas-docs/stable/getting_started/install.html)
+* [matplotlib](https://anaconda.org/conda-forge/matplotlib)
+* [numpy](https://anaconda.org/anaconda/numpy)
+* [scipy](https://anaconda.org/anaconda/scipy)
+
+These need to be installed separately:
+* [nibabel](https://anaconda.org/conda-forge/nibabel)
+* [statsmodels](https://anaconda.org/anaconda/statsmodels)
+* [tqdm](https://anaconda.org/conda-forge/tqdm)
+* [seaborn](https://anaconda.org/anaconda/seaborn)
+
 # Getting started
 Two [Jupyter notebooks](https://jupyter.org/) are provided to demonstrate the use of the software, using two participants from the [Enhanced NKI Rockland](http://fcon_1000.projects.nitrc.org/indi/enhanced/) sample as a demo dataset (see the "project" folder for examples of the required parameters, specified as JSON files).
 
@@ -58,24 +76,6 @@ This also currently serves as a test function for the correct installation of th
 
 # Documentation
 Development of a detailed API, including parameter specifications for all functions, is in expected by the end of March, 2021. A Wiki guide is also in the works.
-
-# Dependencies
-
-[FSL software](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation) (preferably v6.0 or later) must be installed on your system, as well as the computing cluster if you are running the preprocessing steps there.
-
-The [rft1d](https://github.com/neurocoglab/rft1d) package is necessary for 1D random field theory functionality. Note, it is forked from the [original repository](https://github.com/0todd0000/rft1d) in order to work with Python 3.
-
-These dependencies are included in [Anaconda](https://docs.anaconda.com/anaconda/install/) builds (recommended):
-* [pandas](https://pandas.pydata.org/pandas-docs/stable/getting_started/install.html)
-* [matplotlib](https://anaconda.org/conda-forge/matplotlib)
-* [numpy](https://anaconda.org/anaconda/numpy)
-* [scipy](https://anaconda.org/anaconda/scipy)
-
-These need to be installed separately:
-* [nibabel](https://anaconda.org/conda-forge/nibabel)
-* [statsmodels](https://anaconda.org/anaconda/statsmodels)
-* [tqdm](https://anaconda.org/conda-forge/tqdm)
-* [seaborn](https://anaconda.org/anaconda/seaborn)
 
 # Citation
 
