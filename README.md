@@ -1,9 +1,5 @@
 # dwi-tracts
-DWI probabilistic tractography-based tract-specific metrics. This repository is the Python implementation of the procedures described in [this preprint](https://doi.org/10.1101/2021.03.05.434061).
-
-If you use this code in your research, please consider citing the preprint:
-
-Reid AT, Camilleri JA, Hoffstaedter F, Eickhoff SB (2021). Tract-specific statistics based on diffusion-weighted probabilistic tractography. bioRxiv. doi: 10.1101/2021.03.05.434061v1
+DWI probabilistic tractography-based tract-specific metrics.
 
 # Overview
 **dwi-tracts** implements four main functions:
@@ -13,7 +9,7 @@ Reid AT, Camilleri JA, Hoffstaedter F, Eickhoff SB (2021). Tract-specific statis
 * The estimation of participant- and tract-specific diffusion statistics on the basis of average streamline orientations (tract-specific anisotropy; TSA)
 * Linear regression analysis of TSA results, given a set of metadata; this includes cluster-based inference based on one-dimensional random field theory and control of the false discovery rate (FDR)
 
-The relevant theory, implementation, and output are described in more detail in this preprint.
+The relevant theory, implementation, and output are described in more detail in [this preprint](https://doi.org/10.1101/2021.03.05.434061).
 
 The software is organised into several components:
 
@@ -80,3 +76,9 @@ These need to be installed separately:
 * [statsmodels](https://anaconda.org/anaconda/statsmodels)
 * [tqdm](https://anaconda.org/conda-forge/tqdm)
 * [seaborn](https://anaconda.org/anaconda/seaborn)
+
+# Citation
+
+If you use this code in your research, please consider citing the preprint:
+
+Reid AT, Camilleri JA, Hoffstaedter F, Eickhoff SB (2021). Tract-specific statistics based on diffusion-weighted probabilistic tractography. bioRxiv. doi: 10.1101/2021.03.05.434061v1
