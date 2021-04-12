@@ -22,7 +22,7 @@ The software is organised into several components:
 # Installation
 **dwi-tracts** can be cloned from this Github repository. 
 
-The dependencies listed below will also have to be installed on your system. An [Anaconda](https://anaconda.org/anaconda) installation of Python 3 is highly recommended, although not necessary.
+The dependencies listed below will also have to be installed on your system. An [Anaconda](https://anaconda.org/anaconda) installation of Python 3.7 is highly recommended, although not necessary.
 
 # Dependencies
 
