@@ -43,7 +43,7 @@ These need to be installed separately:
 * [seaborn](https://anaconda.org/anaconda/seaborn)
 
 # Getting started
-Two [Jupyter notebooks](https://jupyter.org/) are provided to demonstrate the use of the software, using two participants from the [Enhanced NKI Rockland](http://fcon_1000.projects.nitrc.org/indi/enhanced/) sample as a demo dataset (see the "project" folder for examples of the required parameters, specified as JSON files).
+Two [Jupyter notebooks](https://jupyter.org/) are provided to demonstrate the use of the software, using two participants from the [Enhanced NKI Rockland](http://fcon_1000.projects.nitrc.org/indi/enhanced/) sample as a demo dataset (see the "project" folder for examples of the required parameters, specified as JSON files). Run times are dependent on the input size; the longer steps (typically >30 min) are indicated below:
 
 * **Compute Tract Metrics**: This runs all the steps after preprocessing has been performed, including:
     * Computing bidirectional average distributions
@@ -51,13 +51,13 @@ Two [Jupyter notebooks](https://jupyter.org/) are provided to demonstrate the us
     * Estimating unidirectional tracts
     * Estimating bidirectional tracts
     * Generating a pass/fail graph in [Pajek](http://vlado.fmf.uni-lj.si/pub/networks/pajek/) format
-    * Computing average streamline orientations
-    * Computing TSA values
+    * Computing average streamline orientations (>30 min)
+    * Computing TSA values (>30 min)
     * Generating average TSA images in [NIFTI](https://nifti.nimh.nih.gov/nifti-1/) format
     * Generating TSA histogram plots
 * **GLM Analysis**: This runs all GLM analyses on the generated tract and TSA values:
-    * Fitting GLMs
-    * Extracting distance-wise GLM statistics
+    * Fitting GLMs (>30 min)
+    * Extracting distance-wise GLM statistics (> 30 min)
     * Performing 1D RFT inference and (optional) FDR correction
     * Generating t-value trace plots
     * Generating scatter and violin plots of GLM results
