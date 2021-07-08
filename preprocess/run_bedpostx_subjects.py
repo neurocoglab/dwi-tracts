@@ -40,7 +40,7 @@ deriv_dir = '{0}/{1}'.format(config_gen['root_dir'], config_gen['deriv_dir'])
 # Load subject names
 if not os.path.isdir(deriv_dir):
     os.mkdir(deriv_dir)
-    if params_gen['verbose']: 
+    if config_gen['verbose']: 
         print('Created derivatives dir: {}'.format(deriv_dir))
     
 subjects = [];
@@ -49,11 +49,11 @@ with open(config_gen['subjects_file']) as subj_file:
     for row in reader:
         subjects.append(row[0])
 
-if params_gen['verbose']:            
+if config_gen['verbose']:            
     print('Processing {} subjects'.format(len(subjects)))
 
 for subject in subjects:
-    if params_gen['verbose']: 
+    if config_gen['verbose']: 
         print('Processing subject/session {}'.format(subject))
 
     if config_sched['submit']:
@@ -67,7 +67,7 @@ for subject in subjects:
         sp = Popen(cmd, shell=True, stderr=subprocess.PIPE)
         out, err = sp.communicate()
     
-    if params_gen['verbose']: 
+    if config_gen['verbose']: 
         if not err:
             print('  Finished {}'.format(subject))
         else:
