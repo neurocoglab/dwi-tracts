@@ -49,6 +49,8 @@
 "scheduler":
     {
     "submit":            true,
-    "command":           "sbatch"
+    "command":           "sbatch",
+    "cpu_queue":         "",
+    "gpu_queue":         ""
     }
 }
