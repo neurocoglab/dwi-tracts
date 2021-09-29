@@ -17,7 +17,7 @@
 
 #SBATCH -o logs/bedpostx-%j.out
 
-module load python-uon/gcc6.3.0
+# Load relevant modules here
 
 cmd="./run_subject_bedpostx.py $1 $2"
 

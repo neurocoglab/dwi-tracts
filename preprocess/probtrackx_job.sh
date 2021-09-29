@@ -17,7 +17,7 @@
 
 #SBATCH -o logs/probtrackx-%j.out
 
-module load python-uon/gcc6.3.0
+# Load relevant modules here
 
 cmd="./run_probtrackx.py $1 $2 $3"
 

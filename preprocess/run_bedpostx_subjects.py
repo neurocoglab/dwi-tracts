@@ -7,8 +7,11 @@
 #
 # Arguments:
 # Arg1: configuration file
+# Arg2: phase of processing [preproc|postproc|bedpostx]: if specified, runs preprocessing, 
+#        postprocessing, or full bedpostx job
 
 # Load configuration parameters from JSON file
+import sys
 import json
 import subprocess
 from subprocess import Popen, PIPE, STDOUT 
@@ -20,6 +23,10 @@ def _json_object_hook(d): return namedtuple('X', d.keys())(*d.values())
 def json2obj(data): return json.loads(data, object_hook=_json_object_hook)
 
 config_file = sys.argv[1];
+
+job_type = 'bedpostx'
+if len(sys.argv) > 2:
+	job_type = sys.argv[2]
 
 with open(config_file, 'r') as myfile:
     json_string=myfile.read() #.replace('\n', '')
@@ -51,13 +58,25 @@ with open(config_gen['subjects_file']) as subj_file:
 
 if config_gen['verbose']:            
     print('Processing {} subjects'.format(len(subjects)))
+    
+if job_type   == 'bedpostx':
+	script_file = config_bpx['job_script']
+elif job_type == 'gpu':
+	script_file = config_bpx['job_script']
+elif job_type == 'preproc':
+	script_file = config_bpx['preproc_script']
+elif job_type == 'postproc':
+	script_file = config_bpx['postproc_script']
+else:
+	print('Unsupported job type: {0}'.format(job_type))
+	assert False
 
 for subject in subjects:
     if config_gen['verbose']: 
         print('Processing subject/session {}'.format(subject))
 
     if config_sched['submit']:
-        cmd = '{0} {1} {2} {3}'.format(config_sched['command'], config_bpx['job_file'], \
+        cmd = '{0} {1} {2} {3}'.format(config_sched['command'], script_file, \
                                    subject, config_file)
         sp = Popen(cmd, shell=True, stderr=subprocess.PIPE)
         out, err = sp.communicate()
@@ -71,7 +90,7 @@ for subject in subjects:
         if not err:
             print('  Finished {}'.format(subject))
         else:
-            print('  {0} failed:\n{1}'.format(subject, err))
+            print('  {0} failed:\n{1}'.format(subject, err.decode('ascii')))
         print('Finished subject {}'.format(subject))
     
     

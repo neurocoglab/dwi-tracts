@@ -7,7 +7,7 @@
     "deriv_dir":         "derived/dwi",
     "convert_dir":       "converted/dwi",
     "flags_dir":         "flags",
-    "prefix":            "",
+    "prefix":            "dwi_",
     "session":           "",
     "subjects_file":     "subjects.list",
     "clobber":           true,
@@ -28,7 +28,9 @@
     "mean3g_ref":        "Mean3G.nii.gz",
     "mean3g_mask":       "Mask.nii.gz",
     "mean3g_config":     "G3_FAnormalization.cnf",
-    "job_script":        "bedpostx_job.sh"
+    "preproc_script":    "bedpostx_preproc_job.sh",
+    "postproc_script":   "bedpostx_postproc_job.sh",
+    "job_script":        "bedpostx_gpu_job.sh"
     },
 "probtrackx":
     {
@@ -47,6 +49,8 @@
 "scheduler":
     {
     "submit":            true,
-    "command":           "sbatch"
+    "command":           "sbatch",
+    "cpu_queue":         "",
+    "gpu_queue":         ""
     }
 }
