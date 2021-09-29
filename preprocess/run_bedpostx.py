@@ -24,6 +24,8 @@ def process_subject(subject, config):
     config_gen = config['general']
     config_bpx = config['bedpostx']
     config_ptx = config['probtrackx']
+    
+    prefix = config_gen['prefix']
 
     if not os.path.isdir(config_gen['root_dir']):
         raise Exception('Root dir does not exist: {}'.format(config_gen['root_dir']))
@@ -36,13 +38,13 @@ def process_subject(subject, config):
     fsl_bin = config_gen['fsl_bin']
     
     subj = '{0}{1}'.format(config_gen['prefix'], subject)
-    input_dir = '{0}/{1}'.format(convert_dir, subject);
+    input_dir = '{0}/{1}/dwi'.format(convert_dir, subject);
    
     if not input_dir:
         print('Subject {0} has no data.'.format(subject))
         return
 
-    output_dir = '{0}/{1}'.format(deriv_dir, subject)
+    output_dir = '{0}/{1}/dwi'.format(deriv_dir, subject)
     if os.path.isdir(output_dir) and config_gen['clobber']:
         shutil.rmtree(output_dir)
     
@@ -56,15 +58,13 @@ def process_subject(subject, config):
         print('\tBedpostX results already exist. Skipping those steps.')
     else:
     
-        dwi_img = '{0}/data.nii.gz' \
-                        .format(output_dir)
+        dwi_img = '{0}/data.nii.gz'.format(output_dir)
 
-        input_img = '{0}/{1}.nii.gz'.format(input_dir, subj)
+        input_img = '{0}/{1}{2}{3}.nii.gz' \
+                        .format(input_dir, prefix, subj, config_bpx['dwi_suffix'])
 
         output_img = '{0}/{1}.nii.gz' \
                         .format(output_dir, config_bpx['eddy_suffix'])
-
-		
 
         if os.path.exists(dwi_img) and not config_gen['clobber']:
             print('\tEddy output exists for {}. Skipping.'.format(subject))
@@ -94,13 +94,14 @@ def process_subject(subject, config):
         #      2.3: Run BET on the mean B0
 
         # Check if output already exists 
-        bet_img = '{0}/{1}' \
-                        .format(output_dir, config_bpx['bet_suffix'])
+        bet_img = '{0}/{1}'.format(output_dir, config_bpx['bet_suffix'])
 
         nodif_img = '{0}/nodif.nii.gz'.format(output_dir)
         
-        bval_file = '{0}/{1}.bval'.format(input_dir, subj)
-        bvec_file = '{0}/{1}.bvec'.format(input_dir, subj)
+        bval_file = '{0}/{1}{2}{3}.bval' \
+                        .format(input_dir, prefix, subj, config_bpx['dwi_suffix'])
+        bvec_file = '{0}/{1}{2}{3}.bvec' \
+                        .format(input_dir, prefix, subj, config_bpx['dwi_suffix'])
         bet_mask_img = '{0}/nodif_brain_mask.nii.gz'.format(output_dir)
 
         if (os.path.exists(bet_img) or os.path.exists(nodif_img)) and not config_gen['clobber']:

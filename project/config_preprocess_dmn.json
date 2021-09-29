@@ -13,7 +13,8 @@
 	},
 "bedpostx":
 	{
-	"anat_suffix":		"T1w",
+	"dwi_suffix":		"_dwi",
+	"anat_suffix":		"_T1w",
 	"bval_suffix":    	"bval",
 	"bvec_suffix":    	"bvec",
 	"eddy_suffix":   	"eddy",

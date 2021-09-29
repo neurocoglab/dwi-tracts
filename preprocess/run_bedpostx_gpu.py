@@ -36,7 +36,7 @@ def process_subject(subject, config):
     fsl_bin = config_gen['fsl_bin']
     
     subj = '{0}{1}'.format(config_gen['prefix'], subject)
-    input_dir = '{0}/{1}'.format(convert_dir, subject);
+    input_dir = '{0}/{1}/dwi'.format(convert_dir, subject);
    
     if not input_dir:
         print('Subject {0} has no data.'.format(subject))
