@@ -6,6 +6,7 @@
     "raw_dir":           "converted",
     "deriv_dir":         "derived/dwi",
     "convert_dir":       "converted/dwi",
+    "dir_format":        "subject_first",
     "flags_dir":         "flags",
     "prefix":            "",
     "session":           "",
@@ -17,6 +18,7 @@
     },
 "bedpostx":
     {
+    "dwi_suffix":        "dwi",
     "anat_suffix":       "T1w",
     "bval_suffix":       "bval",
     "bvec_suffix":       "bvec",

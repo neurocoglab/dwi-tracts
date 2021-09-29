@@ -1,9 +1,9 @@
 {
 "general":
    {
-    "preproc_config_file":   "project/config_preprocess_dmn.json",
-    "tracts_config_file":    "project/config_tracts_dmn.json",
-    "covariates_file":       "project/nki_demos_all.csv",
+    "preproc_config_file":   "project/config_preprocess.json",
+    "tracts_config_file":    "project/config_tracts.json",
+    "covariates_file":       "",
     "standardized_beta":     false,
     "glm_output_dir":        "glms",
     "tract_threshold":       0.4,
@@ -19,26 +19,26 @@
    },
 "glm":
    {
-   "glm-age-sex":
+   "glm-default":
       {
       "factors":
             [
-            "Age",
-            "Sex",
-            "Age*Sex"
+            "Factor1",
+            "Factor2",
+            "Factor1*Factor2"
             ],
       "categorical":
             {
-            "Age":     false,
-            "Sex":     true,
-            "Age*Sex": false
+            "Factor1":         true,
+            "Factor2":         false,
+            "Factor1*Factor2": false
             },
       "levels":
             {
-            "Sex":
+            "Factor1":
                 {
-                 "Male":   1,
-                 "Female": 2
+                 "Level1": 1,
+                 "Level2": 2
                 }
             },
       "intercept":          true,

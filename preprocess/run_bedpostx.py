@@ -39,6 +39,7 @@ def process_subject(subject, config):
     
     subj = '{0}{1}'.format(config_gen['prefix'], subject)
     input_dir = '{0}/{1}/dwi'.format(convert_dir, subject);
+
    
     if not input_dir:
         print('Subject {0} has no data.'.format(subject))
