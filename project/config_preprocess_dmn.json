@@ -5,11 +5,16 @@
 	"root_dir":			"data",
 	"raw_dir":			"raw",
 	"deriv_dir":		"deriv",
+	"convert_dir":       "converted/dwi",
+	"dir_format":        "subject_first",
+    "flags_dir":         "flags",
 	"prefix":			"sub-",
 	"session":			"ses-DS2",
 	"subjects_file":	"project/subjects.list",
 	"clobber": 			false,
-	"dryrun": 			false
+	"dryrun": 			false,
+	"verbose":           true,
+	"temp_dir":          "/tmp/"
 	},
 "bedpostx":
 	{
@@ -24,30 +29,26 @@
 	"mni_ref": 			"MNI152_${T1}_2mm",
 	"mean3g_ref": 		"Mean3G.nii.gz",
 	"mean3g_mask": 		"Mask.nii.gz",
-	"mean3g_config": 	"G3_FAnormalization.cnf"
-	},
-"qsub":
- 	{
-	"use_qsub": 		false,
-	"walltime": 		"10:00:00",
-	"select": 			1,
-	"ncpus": 			1,
-	"mem": 				"4gb",
-	"project_id": 		"",
-	"temp_dir": 		"",
-	"output_dir":   	""
+	"mean3g_config": 	"G3_FAnormalization.cnf", 
+	"job_script":       "bedpostx_job.sh"
 	},
 "probtrackx":
-	{
-	"roi_dir": 			"data/rois",
-	"roi_list": 		"project/dmn.rois",
-	"network_name": 	"dmn",
-	"distthresh": 		5.0,
-	"sampvox": 			2,
-	"nsteps": 			2000,
-	"cthr": 			0.2,
-	"steplength": 		0.5,
-	"nsamples": 		5000,
-	"fibthresh": 		0.01
-	}
+    {
+    "roi_dir":           "",
+    "roi_list":          "",
+    "network_name":      "",
+    "distthresh":        5.0,
+    "sampvox":           2,
+    "nsteps":            2000,
+    "cthr":              0.2,
+    "steplength":        0.5,
+    "nsamples":          8000,
+    "fibthresh":         0.01,
+    "job_script":        "probtrackx_job.sh"
+    },
+"scheduler":
+    {
+    "submit":            true,
+    "command":           "sbatch"
+    }
 }

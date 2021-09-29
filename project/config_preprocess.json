@@ -18,8 +18,8 @@
     },
 "bedpostx":
     {
-    "dwi_suffix":        "dwi",
-    "anat_suffix":       "T1w",
+    "dwi_suffix":        "_dwi",
+    "anat_suffix":       "_T1w",
     "bval_suffix":       "bval",
     "bvec_suffix":       "bvec",
     "eddy_suffix":       "eddy",
@@ -44,7 +44,7 @@
     "steplength":        0.5,
     "nsamples":          8000,
     "fibthresh":         0.01,
-    "job_file":          "probtrackx_job.sh"
+    "job_script":        "probtrackx_job.sh"
     },
 "scheduler":
     {
