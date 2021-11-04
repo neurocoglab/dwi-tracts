@@ -145,7 +145,7 @@ class DwiTracts:
         self.V_img = V_img
         self.roi_suffix = roi_suffix
         
-        tracts = self.get_final_bidirs(0, True) # params_gen['debug'])
+        tracts = self.get_final_bidirs(0, debug=True) # params_gen['debug'])
         if len(tracts) > 0:
             self.tracts_final_bidir = tracts
         
@@ -173,6 +173,9 @@ class DwiTracts:
                                 print('DEBUG: tract {0} has no voxels > {1:1.3f}'.format(tract_name, threshold))
                             continue
                     tracts.append(tract_name)
+                else:
+                    if debug:
+                        print('Tract not found: {0}'.format(test))
                 
         return tracts
         

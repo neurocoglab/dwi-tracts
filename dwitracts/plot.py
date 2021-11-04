@@ -14,6 +14,7 @@ import pandas as pd
 from tqdm import tnrange, tqdm_notebook, tqdm
 from . import utils
 import math
+import traceback
 
 # Generates TSA histograms across all subjects and tracts; 
 # as well individual histograms for each tract.
@@ -21,6 +22,7 @@ import math
 # params:               Plotting parameters
 # tract_name:           Tract for which to obtain TSA values
 # threshold:            Tract threshold (only return voxels where V_tract>threshold)
+# output_data:          Whether to write plot data as CSV files
 # verbose:              Whether to print messages to the console
 #
 # returns:              Pandas DataFrame object, containing means & standard deviations
@@ -200,17 +202,28 @@ def plot_tsa_histograms( params, my_dwi, tract_names=None, threshold=0.5, verbos
 # Plot distance-wise t-values as a set of horizontal lines
 #
 # params:            Dict of parameters used to generate results
-# alpha:             The alpha threshold to apply to p values
+#    axis_font:        Font size for axis labels
+#    xticklabel_font:  Font size for X-axis tick labels
+#    yticklabel_font:  Font size for Y-axis tick labels
+#    title_font:       Font size for the title
+#    font_scale:       Global scale to apply to all fonts
+#    image_format:     Output format to save figure; includes 'png' or 'svg'; 
+#                        see matplotlib plt.savefig() for all options
+#    alpha:            The alpha threshold to apply to p values
+#    stat_type:        The type of FWE correction applied; one of 'uncorrected' (default),
+#                        'fdr', 'rft', or 'perm'.
+#    write_data:       Whether to write plot data as CSV files
 # tract_names:       List of the tracts to plot
-# stat_type:         The type of FWE correction applied; one of 'uncorrected' (default),
-#                     'fdr', 'rft', or 'perm'.
 # verbose:           Whether to print progress to screen
 #
-def plot_distance_traces( params, tract_names, alpha=0.5, stat_type='uncorrected', verbose=False ):
+def plot_distance_traces( params, tract_names, verbose=False ):
     
     params_glm = params['glm']
     params_gen = params['general']
     params_tracts = params['tracts']
+    
+    alpha=params['alpha']
+    stat_type=params['stat_type']
     
     source_dir = params_tracts['general']['source_dir']
     project_dir = os.path.join(source_dir, params_tracts['general']['project_dir'])
@@ -260,11 +273,17 @@ def plot_distance_traces( params, tract_names, alpha=0.5, stat_type='uncorrected
         for factor in factors[1:]:
             factor_str = factor.replace('*','X')
             plt.figure(figsize=(20,12))
-#             offset = len(tracts_plotted)-1
+            plot_data = {};
+            max_dist = 0;
+
             for tract_name, offset in zip(tracts_plotted, range(len(tracts_plotted)-1,-1,-1)):
                 stats_file = '{0}/stats_{1}.csv'.format(output_dir, tract_name)
                 T = pd.read_csv(stats_file)
                 tvals = T['{0}|tval'.format(factor_str)].values
+                
+                plot_data[tract_name] = tvals;
+                max_dist = max(max_dist, tvals.size)
+                                         
                 px = ''
                 if len(suffix) > 0:
                     px = '{0}_'.format(suffix)
@@ -298,6 +317,19 @@ def plot_distance_traces( params, tract_names, alpha=0.5, stat_type='uncorrected
             
             plt.savefig('{0}/lines_{1}{2}.{3}'.format(figures_dir, factor_str, sx, params['image_format']), \
                         format=params['image_format'])
+            
+            if params['write_data']:
+                fig_data_dir = '{0}/data'.format(figures_dir)
+                if not os.path.isdir(fig_data_dir):
+                    os.mkdir(fig_data_dir)
+                output_file = '{0}/lines_{1}{2}.csv'.format(fig_data_dir, factor_str, sx);
+                with open(output_file, 'w+') as outfile:
+                    outfile.write('distance,' + ','.join([str(el) for el in range(1,max_dist+1)]) + '\n')
+                    for tract_name in tracts_plotted:
+                        outfile.write(tract_name + ',')
+                        outfile.write(','.join([str(el) for el in plot_data[tract_name].tolist()]) + '\n')
+                        
+                
 #             plt.show()
 
 # Plot the distance-wise results of GLM analyses for each GLM, factor, and tract. 
@@ -314,6 +346,7 @@ def plot_distance_traces( params, tract_names, alpha=0.5, stat_type='uncorrected
 #                      ticklabel_font: Font size for tick labels
 #                      title_font:     Font size for figure titles
 #                      write_csv:      Whether to output the +/- betas as a CSV file
+#                      write_data:     Whether to write plot data as CSV files
 # my_glm:           DwiTractsGlm object specifying the GLMs and data structures  
 # verbose:          Whether to print progress to screen
 #
@@ -322,9 +355,12 @@ def plot_glm_results_all( params, my_glm, verbose=False ):
     
     for tract in tqdm_notebook(my_glm.tract_names, 'Generating plots'):
         params['tract_name'] = tract
-        if verbose:
+        
+        if not plot_glm_results( params, my_glm, verbose ):
+            print('Tract {0} failed'.format(tract))
+        elif verbose:
             print('Tract {0}'.format(tract))
-        plot_glm_results( params, my_glm, verbose )
+        
     
 
 # Plot the distance-wise results of GLM analyses for each GLM and factor. 
@@ -352,10 +388,11 @@ def plot_glm_results_all( params, my_glm, verbose=False ):
 #                      ticklabel_font: Font size for tick labels
 #                      title_font:     Font size for figure titles
 #                      write_csv:      Whether to output the +/- betas as a CSV file
+#                      write_data:     Whether to write plot data as CSV files
 # my_glm:           DwiTractsGlm object specifying the GLMs and data structures  
 # verbose:          Whether to print progress to screen
 #
-def plot_glm_results( params, my_glm, verbose=False ):
+def plot_glm_results( params, my_glm, verbose=False, debug=False ):
     
     sns.set(style="white", palette="muted", color_codes=True)
     plot_face_clr = [1,1,1]
@@ -430,6 +467,7 @@ def plot_glm_results( params, my_glm, verbose=False ):
         nonlocal my_glm
         nonlocal tracts_dir
         nonlocal tract_thresh
+        nonlocal verbose
         
         subjects = my_glm.subjects
         
@@ -457,6 +495,7 @@ def plot_glm_results( params, my_glm, verbose=False ):
         N_sub = len(subjects)
 
         V_betas = np.zeros((N_sub, idx_tract.size))
+        
         # Get betas for each subject
         for subject, i in zip(subjects, range(0,N_sub)):
             prefix_sub = '{0}{1}'.format(params_tracts['general']['prefix'], subject)
@@ -466,10 +505,14 @@ def plot_glm_results( params, my_glm, verbose=False ):
                                                        params_tracts['general']['network_name'])
             beta_file = '{0}/betas_mni_sm_{1}um_{2}.nii.gz' \
                                   .format(subj_output_dir, int(1000.0*params_regress['beta_sm_fwhm']), tract_name)
-
+            
+            if not os.path.isfile(beta_file):
+#                 print('  No betas found for {0}!'.format(subject))
+                raise ValueError('No betas found for {0}!'.format(subject))
+    
             V_sub = nib.load(beta_file).get_fdata()
             V_betas[i,:] = V_sub.ravel()[idx_tract]
-            
+                
         return V_betas, V_dist, V_tract, idx_tract
     
     
@@ -568,6 +611,7 @@ def plot_glm_results( params, my_glm, verbose=False ):
 
         if count_pos > 0:
             betas_pos = np.sum(bb_pos,axis=1) / count_pos
+
             # Remove outliers
             if params['outlier_z'] > 0:
                 zthres = [betas_pos.mean() - params['outlier_z'] * betas_pos.std(), \
@@ -581,6 +625,7 @@ def plot_glm_results( params, my_glm, verbose=False ):
 
         if count_neg > 0:
             betas_neg = np.sum(bb_neg,axis=1) / count_neg
+
              # Remove outliers
             if params['outlier_z'] > 0:
                 zthres = [betas_neg.mean() - params['outlier_z'] * betas_neg.std(), \
@@ -616,6 +661,7 @@ def plot_glm_results( params, my_glm, verbose=False ):
         nonlocal categorical
         nonlocal figures_dir
         nonlocal plot_colors
+        nonlocal params
         
         params_glm = my_glm.params['glm']
         alpha = params['alpha']
@@ -623,6 +669,10 @@ def plot_glm_results( params, my_glm, verbose=False ):
         glm = params['glm']
         X = my_glm.Xs[glm]
         factors = params_glm[glm]['factors']
+        
+        suffix = ''
+        if stat_type != 'uncorrected':
+            suffix = '_{0}'.format(stat_type)
         
         # Get component factors and determine which is which
         parts = factor.split('*')
@@ -677,12 +727,9 @@ def plot_glm_results( params, my_glm, verbose=False ):
             figsize=(figsize[0]*n_rows, figsize[1])
         
         fig, axs = plt.subplots(1, n_rows, sharey=False, figsize=figsize)
-#         fig, axs = plt.subplots(n_rows, 1, sharey=True, figsize=figsize)
-    
         if n_rows == 1:
             axs = np.array([axs])
-           
-               
+     
         # Sort variables by X2
         X2 = X[:,i2]
         idx = np.argsort(X2)
@@ -692,6 +739,15 @@ def plot_glm_results( params, my_glm, verbose=False ):
         betas_neg = betas_neg[idx]
 
         idx_row = 0
+        
+        # Write data to CSV file?
+        if params['write_data']:
+            fig_data_dir = '{0}/data'.format(figures_dir)
+            if not os.path.isdir(fig_data_dir):
+                os.mkdir(fig_data_dir)
+            output_file = '{0}/scatter_{1}_{2}{3}.csv'.format( fig_data_dir, factor_str, tract_name, suffix );
+            with open(output_file, 'w+') as outfile:
+                outfile.write('Direction,{0},{1},TSA\n'.format(fac1, fac2))
         
         for title, betas in zip(['Positive', 'Negative'], [betas_pos, betas_neg]):
             if np.sum(betas) != 0:
@@ -707,8 +763,12 @@ def plot_glm_results( params, my_glm, verbose=False ):
                     axs[idx_row].plot(x, y_est, color=plot_colors[j])
                     axs[idx_row].fill_between(x, ci[0,:], ci[1,:], alpha=0.2)
                     axs[idx_row].plot(x, y, 'o', linewidth=0, label=lnames[j])
-#                     axs[idx_row].set_title('{0} interaction [{1}]'.format(title, lnames[j]))
                     
+                    if params['write_data']:
+                        with open(output_file, 'a') as outfile:
+                            for xi, yi in zip(x,y):
+                                outfile.write('{0},{1},{2},{3}\n'.format(title, lnames[j], xi, yi))
+
                 idx_row += 1
   
         for ax in axs.flat:
@@ -722,23 +782,20 @@ def plot_glm_results( params, my_glm, verbose=False ):
         else:
             plt.tight_layout()
      
-        
-        suffix = ''
-        if stat_type != 'uncorrected':
-            suffix = '_{0}'.format(stat_type)
-
-#         plt.tight_layout()
-        plt.savefig( '{0}/scatter_{1}_{2}{3}.{4}'.format( figures_dir, factor_str, tract_name, suffix, img_format ), \
+        outfile = '{0}/scatter_{1}_{2}{3}.{4}'.format( figures_dir, factor_str, tract_name, suffix, img_format )
+        plt.savefig( outfile, \
                      facecolor=plot_face_clr, \
                      transparent=True, \
                      format=img_format)
-        
+        if verbose:
+            print(outfile);
         plt.close()
         
     def plot_continuous( factor, betas_pos, betas_neg, show_title=True, figsize=None ):
         
         nonlocal my_glm
         nonlocal params
+        nonlocal debug
         
         has_pos = np.sum(betas_pos[~np.isnan(betas_pos)] != 0) > 0
         has_neg = np.sum(betas_neg[~np.isnan(betas_neg)] != 0) > 0
@@ -750,9 +807,17 @@ def plot_glm_results( params, my_glm, verbose=False ):
         X = my_glm.Xs[glm]
         params_glm = my_glm.params['glm']
         factors = params_glm[glm]['factors']
+        
+        factor_str = factor.replace('*','X')
+        
+        suffix = ''
+        if stat_type != 'uncorrected':
+            suffix = '_{0}'.format(stat_type)
 
         n_rows = int(has_pos) + int(has_neg)
         if n_rows == 0:
+            if debug:
+                print('No significant betas for {0}!'.format(factor))
             return False
 
         if figsize is None:
@@ -769,6 +834,15 @@ def plot_glm_results( params, my_glm, verbose=False ):
         idx = np.argsort(X1)
         
         idx_row = 0
+        
+        # Write data to CSV file?
+        if params['write_data']:
+            fig_data_dir = '{0}/data'.format(figures_dir)
+            if not os.path.isdir(fig_data_dir):
+                os.mkdir(fig_data_dir)
+            output_file = '{0}/scatter_{1}_{2}{3}.csv'.format( fig_data_dir, factor_str, tract_name, suffix );
+            with open(output_file, 'w+') as outfile:
+                outfile.write('Direction,{0},TSA\n'.format(factor_str))
         
         for title, betas in zip(['Positive', 'Negative'], [betas_pos, betas_neg]):
             if np.sum(betas != 0) > 0:
@@ -787,6 +861,11 @@ def plot_glm_results( params, my_glm, verbose=False ):
 #                 if show_title:
 #                     axs[idx_row].set_title('{0} association'.format(title))
                 idx_row += 1
+    
+                if params['write_data']:
+                    with open(output_file, 'a') as outfile:
+                        for xi, yi in zip(x,y):
+                            outfile.write('{0},{1},{2}\n'.format(title, xi, yi))
   
         for ax in axs.flat:
             ax.set(xlabel=factor, ylabel='TSA')
@@ -797,18 +876,14 @@ def plot_glm_results( params, my_glm, verbose=False ):
         else:
             plt.tight_layout()
         
-        suffix = ''
-        if stat_type != 'uncorrected':
-            suffix = '_{0}'.format(stat_type)
-        
 #         plt.tight_layout()
-        plt.savefig( '{0}/scatter_{1}_{2}{3}.{4}'.format( figures_dir, factor, tract_name, suffix, img_format ), \
+        output_file = '{0}/scatter_{1}_{2}{3}.{4}'.format( figures_dir, factor_str, tract_name, suffix, img_format )
+        plt.savefig( output_file, \
                      facecolor=plot_face_clr, \
                      transparent=True, \
                      format=img_format)
         
         plt.close()
-                                    
               
     def plot_violins( factor, betas_pos, betas_neg, show_title=True, figsize=None ):
         
@@ -820,6 +895,10 @@ def plot_glm_results( params, my_glm, verbose=False ):
         glm = params['glm']
         X = my_glm.Xs[glm]
         factors = params_glm[glm]['factors']
+        
+        suffix = ''
+        if stat_type != 'uncorrected':
+            suffix = '_{0}'.format(stat_type)
         
         has_pos = np.sum(betas_pos[~np.isnan(betas_pos)] != 0) > 0
         has_neg = np.sum(betas_neg[~np.isnan(betas_neg)] != 0) > 0
@@ -867,7 +946,14 @@ def plot_glm_results( params, my_glm, verbose=False ):
         
         idx_a = 0;
         
-        for h, betas, t in zip([has_pos, has_neg], [betas_pos, betas_neg], [0,1]):
+        # Write data to CSV file?
+        if params['write_data']:
+            fig_data_dir = '{0}/data'.format(figures_dir)
+            if not os.path.isdir(fig_data_dir):
+                os.mkdir(fig_data_dir)
+            output_file = '{0}/violin_{1}_{2}{3}.csv'.format( fig_data_dir, factor_str, tract_name, suffix );
+        
+        for h, betas, title in zip([has_pos, has_neg], [betas_pos, betas_neg], ['Positive', 'Negative']):
             if h:
                 if n_rows == 1:
                     axis = axs
@@ -878,14 +964,15 @@ def plot_glm_results( params, my_glm, verbose=False ):
 
                 df = pd.DataFrame(data={'TSA': betas[idx_ok], factor_str: x[idx_ok]})
                 df[factor_str].astype('category')
+                df['Direction'] = title;
                     
                 sns.violinplot(x=factor_str, y='TSA', ax=axis, data=df, order=lnames)
                 for v in axis.collections[::2]:
                     v.set_alpha(0.3)
                 sns.stripplot(x=factor_str, y='TSA', ax=axis, data=df, order=lnames, s=params['marker_size'])
                 
-#                 if show_title:
-#                     axis.set_title(titles[t])
+                if params['write_data']:
+                    df.to_csv(output_file, index=False)
 
                 idx_a += 1   
         
@@ -894,12 +981,7 @@ def plot_glm_results( params, my_glm, verbose=False ):
             plt.subplots_adjust(top=0.9, left=0.15, right=0.9, bottom=0.1)
         else:
             plt.tight_layout()
-        
-        suffix = ''
-        if stat_type != 'uncorrected':
-            suffix = '_{0}'.format(stat_type)
-        
-#         plt.tight_layout()
+
         plt.savefig( '{0}/violin_{1}_{2}{3}.{4}'.format( figures_dir, factor_str, tract_name, suffix, img_format ), \
                      facecolor=plot_face_clr, \
                      transparent=True, \
@@ -909,50 +991,54 @@ def plot_glm_results( params, my_glm, verbose=False ):
 
 
     # Load the betas and plot each factor
-    V_betas, V_dist, V_tract, idx_tract = load_betas( )
-    
-    # Set font display parameters
-    plt.rc('axes', titlesize=params['axis_font']) 
-    plt.rc('axes', labelsize=params['axis_font'])
-    plt.rc('figure', titlesize=params['title_font'])
-    plt.rc('xtick', labelsize=params['ticklabel_font'])
-    plt.rc('ytick', labelsize=params['ticklabel_font'])
-    plt.rc('legend', fontsize=params['legend_font'])
-    plt.rc('legend', markerscale=params['legend_scale'])
-    plt.rc('lines', markersize=params['marker_size'])
-    plt.rc('lines', linewidth=params['line_width'])
-    
-    factors = params_glm[glm]['factors'].copy()
-    if 'Intercept' in factors:
-        factors.remove('Intercept')
-        
-    df_betas = None
-    if write_csv:
-        df_betas = pd.DataFrame({'subject_id': my_glm.subjects})
-    
-    for factor in factors:
-        
-        betas_pos, betas_neg = get_average_betas( factor, V_betas, V_dist, V_tract, idx_tract )
-        cneg = np.count_nonzero(np.isnan(betas_neg))
-        cpos = np.count_nonzero(np.isnan(betas_pos))
-        if cneg+cpos > 0:
-            if verbose:
-                print('  {0} [{1}]: Removed {2} outliers.'.format(tract_name, factor, (cneg+cpos)))
-#         if verbose:
-#             print('{0}[{1}]: {2} pos, {3} neg'.format(tract_name, factor, np.count_nonzero(betas_pos), \
-#                                                                           np.count_nonzero(betas_neg)))
-        plot_factor( factor, betas_pos, betas_neg, show_title=params['show_title'], figsize=params['dimensions'] )
+    try:
+        V_betas, V_dist, V_tract, idx_tract = load_betas( )
+
+        # Set font display parameters
+        plt.rc('axes', titlesize=params['axis_font']) 
+        plt.rc('axes', labelsize=params['axis_font'])
+        plt.rc('figure', titlesize=params['title_font'])
+        plt.rc('xtick', labelsize=params['ticklabel_font'])
+        plt.rc('ytick', labelsize=params['ticklabel_font'])
+        plt.rc('legend', fontsize=params['legend_font'])
+        plt.rc('legend', markerscale=params['legend_scale'])
+        plt.rc('lines', markersize=params['marker_size'])
+        plt.rc('lines', linewidth=params['line_width'])
+
+        factors = params_glm[glm]['factors'].copy()
+        if 'Intercept' in factors:
+            factors.remove('Intercept')
+
+        df_betas = None
+        if write_csv:
+            df_betas = pd.DataFrame({'subject_id': my_glm.subjects})
+
+        for factor in factors:
+            betas_pos, betas_neg = get_average_betas( factor, V_betas, V_dist, V_tract, idx_tract )
+            cneg = np.count_nonzero(np.isnan(betas_neg))
+            cpos = np.count_nonzero(np.isnan(betas_pos))
+            if cneg+cpos > 0:
+                if verbose:
+                    print('  {0} [{1}]: Removed {2} outliers.'.format(tract_name, factor, (cneg+cpos)))
+
+            plot_factor( factor, betas_pos, betas_neg, show_title=params['show_title'], figsize=params['dimensions'] )
+            if df_betas is not None:
+                factor_str = factor.replace('*','X')
+                dfi = pd.DataFrame({'{0}_pos'.format(factor_str): betas_pos, '{0}_neg'.format(factor_str): betas_neg})
+                df_betas = df_betas.join(dfi)
+
         if df_betas is not None:
-            factor_str = factor.replace('*','X')
-            dfi = pd.DataFrame({'{0}_pos'.format(factor_str): betas_pos, '{0}_neg'.format(factor_str): betas_neg})
-            df_betas = df_betas.join(dfi)
+            out_file = '{0}/avr_betas_{1}.csv'.format(figures_dir, tract_name)
+            df_betas.to_csv(out_file)
+            if verbose:
+                print('   Wrote average TSA values to {0}.'.format(out_file))
     
-    if df_betas is not None:
-        out_file = '{0}/avr_betas_{1}.csv'.format(figures_dir, tract_name)
-        df_betas.to_csv(out_file)
-        if verbose:
-            print('   Wrote average TSA values to {0}.'.format(out_file))
-        
+    except ValueError as error:
+        print(error)
+        if debug:
+            print(traceback.format_exc())
+        return False
+                                 
     return True
     
     
