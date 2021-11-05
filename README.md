@@ -43,7 +43,7 @@ These need to be installed separately:
 * [seaborn](https://anaconda.org/anaconda/seaborn)
 
 # Getting started
-Two [Jupyter notebooks](https://jupyter.org/) are provided to demonstrate the use of the software, using two participants from the [Enhanced NKI Rockland](http://fcon_1000.projects.nitrc.org/indi/enhanced/) sample as a demo dataset (see the "project" folder for examples of the required parameters, specified as JSON files). Run times are dependent on the input size; the longer steps (typically >30 min) are indicated below:
+Two [Jupyter notebooks](https://jupyter.org/) are provided to demonstrate the use of the software, using three participants from the [Enhanced NKI Rockland](http://fcon_1000.projects.nitrc.org/indi/enhanced/) sample as a demo dataset, available [here](https://github.com/neurocoglab/dwi-tracts-data) (see the "project" folder for examples of the required parameters, specified as JSON files). Run times are dependent on the input size; the longer steps (typically >30 min) are indicated below:
 
 * **Compute Tract Metrics**: This runs all the steps after preprocessing has been performed, including:
     * Computing bidirectional average distributions
