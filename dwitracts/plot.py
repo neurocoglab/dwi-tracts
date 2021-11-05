@@ -787,8 +787,6 @@ def plot_glm_results( params, my_glm, verbose=False, debug=False ):
                      facecolor=plot_face_clr, \
                      transparent=True, \
                      format=img_format)
-        if verbose:
-            print(outfile);
         plt.close()
         
     def plot_continuous( factor, betas_pos, betas_neg, show_title=True, figsize=None ):
