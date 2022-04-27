@@ -102,7 +102,7 @@ def process_subject(subject, config):
         
         # Linear (FLIRT)
         cmd = '{0}flirt -in {1}/dti_FA.nii.gz ' \
-                       '-ref utils/{2} ' \
+                       '-ref ../utils/{2} ' \
                        '-out {3}/FA_lin2Mean3G.nii.gz ' \
                        '-omat {3}/FA_lin2Mean3G.mat ' \
                        '-bins 256 -cost corratio ' \
@@ -118,10 +118,10 @@ def process_subject(subject, config):
         
         # Non-linear (FNIRT)
         cmd = '{0}fnirt --in={1}/dti_FA.nii.gz ' \
-                       '--ref=utils/{2} ' \
-                       '--refmask=utils/{3} ' \
+                       '--ref=../utils/{2} ' \
+                       '--refmask=../utils/{3} ' \
                        '--aff={4}/FA_lin2Mean3G.mat ' \
-                       '--config=utils/{5} ' \
+                       '--config=../utils/{5} ' \
                        '--cout={4}/FA_warp2Mean3G.nii.gz ' \
                        '--iout={4}/FA_nlin2Mean3G.nii.gz' \
                             .format(fsl_bin, output_dir, config_bpx['mean3g_ref'], \

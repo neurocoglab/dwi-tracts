@@ -25,7 +25,7 @@ def process_subject(subject, config):
     config_bpx = config['bedpostx']
     config_ptx = config['probtrackx']
     
-    prefix = congif_gen['prefix']
+    prefix = config_gen['prefix']
 
     if not os.path.isdir(config_gen['root_dir']):
         raise Exception('Root dir does not exist: {}'.format(config_gen['root_dir']))
@@ -37,8 +37,11 @@ def process_subject(subject, config):
     # eddy_correct <4dinput> <4doutput> <reference_no>    
     fsl_bin = config_gen['fsl_bin']
     
-    subj = '{0}{1}'.format(config_gen['prefix'], subject)
-    input_dir = '{0}/{1}/dwi'.format(convert_dir, subject);
+    subj = '{0}{1}'.format(prefix, subject)
+    if config_gen['dir_format'] == 'subject_first':
+    	input_dir = '{0}/{1}/dwi'.format(convert_dir, subject)
+    else:
+    	input_dir = '{0}/dwi/{1}'.format(convert_dir, subject);
    
     if not input_dir:
         print('Subject {0} has no data.'.format(subject))
@@ -69,7 +72,7 @@ def process_subject(subject, config):
         dwi_img = '{0}/data.nii.gz' \
                         .format(output_dir)
 
-        input_img = '{0}/{1}{2}.nii.gz'.format(input_dir, prefix, subj)
+        input_img = '{0}/{1}.nii.gz'.format(input_dir, subj)
 
         output_img = '{0}/{1}.nii.gz' \
                         .format(output_dir, config_bpx['eddy_suffix'])
@@ -108,8 +111,8 @@ def process_subject(subject, config):
 
         nodif_img = '{0}/nodif.nii.gz'.format(output_dir)
         
-        bval_file = '{0}/{1}{2}.bval'.format(input_dir, prefix, subj)
-        bvec_file = '{0}/{1}{2}.bvec'.format(input_dir, prefix, subj)
+        bval_file = '{0}/{1}{2}.bval'.format(input_dir, subj)
+        bvec_file = '{0}/{1}{2}.bvec'.format(input_dir, subj)
         bet_mask_img = '{0}/nodif_brain_mask.nii.gz'.format(output_dir)
 
         if (os.path.exists(bet_img) or os.path.exists(nodif_img)) and not config_gen['clobber']:

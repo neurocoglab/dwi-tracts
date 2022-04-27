@@ -24,7 +24,7 @@ def process_subject(subject, config):
     config_gen = config['general']
     config_bpx = config['bedpostx']
     config_ptx = config['probtrackx']
-    
+        
     prefix = config_gen['prefix']
 
     if not os.path.isdir(config_gen['root_dir']):
@@ -38,9 +38,11 @@ def process_subject(subject, config):
     fsl_bin = config_gen['fsl_bin']
     
     subj = '{0}{1}'.format(config_gen['prefix'], subject)
-    input_dir = '{0}/{1}/dwi'.format(convert_dir, subject);
-
-   
+    if config_gen['dir_format'] == 'subject_first':
+    	input_dir = '{0}/{1}/dwi'.format(convert_dir, subject)
+    else:
+    	input_dir = '{0}/dwi/{1}'.format(convert_dir, subject);
+    	
     if not input_dir:
         print('Subject {0} has no data.'.format(subject))
         return
@@ -61,12 +63,12 @@ def process_subject(subject, config):
     
         dwi_img = '{0}/data.nii.gz'.format(output_dir)
 
-        input_img = '{0}/{1}{2}{3}.nii.gz' \
-                        .format(input_dir, prefix, subj, config_bpx['dwi_suffix'])
+        input_img = '{0}/{1}{2}.nii.gz' \
+                        .format(input_dir, subj, config_bpx['dwi_suffix'])
 
         output_img = '{0}/{1}.nii.gz' \
                         .format(output_dir, config_bpx['eddy_suffix'])
-
+          
         if os.path.exists(dwi_img) and not config_gen['clobber']:
             print('\tEddy output exists for {}. Skipping.'.format(subject))
         else:
@@ -99,10 +101,10 @@ def process_subject(subject, config):
 
         nodif_img = '{0}/nodif.nii.gz'.format(output_dir)
         
-        bval_file = '{0}/{1}{2}{3}.bval' \
-                        .format(input_dir, prefix, subj, config_bpx['dwi_suffix'])
-        bvec_file = '{0}/{1}{2}{3}.bvec' \
-                        .format(input_dir, prefix, subj, config_bpx['dwi_suffix'])
+        bval_file = '{0}/{1}{2}.bval' \
+                        .format(input_dir, subj, config_bpx['dwi_suffix'])
+        bvec_file = '{0}/{1}{2}.bvec' \
+                        .format(input_dir, subj, config_bpx['dwi_suffix'])
         bet_mask_img = '{0}/nodif_brain_mask.nii.gz'.format(output_dir)
 
         if (os.path.exists(bet_img) or os.path.exists(nodif_img)) and not config_gen['clobber']:
@@ -255,7 +257,7 @@ def process_subject(subject, config):
         
         # Linear (FLIRT)
         cmd = '{0}flirt -in {1}/dti_FA.nii.gz ' \
-                       '-ref utils/{2} ' \
+                       '-ref ../utils/{2} ' \
                        '-out {3}/FA_lin2Mean3G.nii.gz ' \
                        '-omat {3}/FA_lin2Mean3G.mat ' \
                        '-bins 256 -cost corratio ' \
@@ -271,10 +273,10 @@ def process_subject(subject, config):
         
         # Non-linear (FNIRT)
         cmd = '{0}fnirt --in={1}/dti_FA.nii.gz ' \
-                       '--ref=utils/{2} ' \
-                       '--refmask=utils/{3} ' \
+                       '--ref=../utils/{2} ' \
+                       '--refmask=../utils/{3} ' \
                        '--aff={4}/FA_lin2Mean3G.mat ' \
-                       '--config=utils/{5} ' \
+                       '--config=../utils/{5} ' \
                        '--cout={4}/FA_warp2Mean3G.nii.gz ' \
                        '--iout={4}/FA_nlin2Mean3G.nii.gz' \
                             .format(fsl_bin, output_dir, config_bpx['mean3g_ref'], \
