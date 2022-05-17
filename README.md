@@ -75,7 +75,9 @@ which will start the notebook in your web browser. You can then sequentially run
 This also currently serves as a test function for the correct installation of the software.
 
 # Documentation
-Development of a detailed API, including parameter specifications for all functions, is in expected by the end of March, 2021. A Wiki guide is also in the works.
+Development of a detailed API, including parameter specifications for all functions, is in expected by the end of March, 2021. 
+
+A Wiki guide is [now available](https://github.com/neurocoglab/dwi-tracts/wiki).
 
 # Citation
 
