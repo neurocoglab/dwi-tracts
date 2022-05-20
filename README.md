@@ -43,6 +43,9 @@ These need to be installed separately:
 * [seaborn](https://anaconda.org/anaconda/seaborn)
 
 # Getting started
+
+A Wiki guide is [now available](https://github.com/neurocoglab/dwi-tracts/wiki).
+
 Two [Jupyter notebooks](https://jupyter.org/) are provided to demonstrate the use of the software, using three participants from the [Enhanced NKI Rockland](http://fcon_1000.projects.nitrc.org/indi/enhanced/) sample as a demo dataset, available [here](https://github.com/neurocoglab/dwi-tracts-data) (see the "project" folder for examples of the required parameters, specified as JSON files). Run times are dependent on the input size; the longer steps (typically >30 min) are indicated below:
 
 * **Compute Tract Metrics**: This runs all the steps after preprocessing has been performed, including:
@@ -76,8 +79,6 @@ This also currently serves as a test function for the correct installation of th
 
 # Documentation
 Development of a detailed API, including parameter specifications for all functions, is in expected by the end of March, 2021. 
-
-A Wiki guide is [now available](https://github.com/neurocoglab/dwi-tracts/wiki).
 
 # Citation
 
