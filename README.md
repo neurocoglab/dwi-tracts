@@ -82,6 +82,10 @@ Development of a detailed API, including parameter specifications for all functi
 
 # Citation
 
-If you use this code in your research, please consider citing the preprint:
+If you use this code in your research, please consider citing the article:
 
-Reid AT, Camilleri JA, Hoffstaedter F, Eickhoff SB (2021). Tract-specific statistics based on diffusion-weighted probabilistic tractography. bioRxiv. doi: [10.1101/2021.03.05.434061v1](https://doi.org/10.1101/2021.03.05.434061)
+Reid AT, Camilleri JA, Hoffstaedter F, Eickhoff SB (2022). Tract-specific statistics based on diffusion-weighted probabilistic tractography. _Commun Biol._ 5:138. doi: [10.1038/s42003-022-03073-w](http://dx.doi.org/10.1038/s42003-022-03073-w)
+
+Earlier preprint is available here:
+
+Reid AT, Camilleri JA, Hoffstaedter F, Eickhoff SB (2021). Tract-specific statistics based on diffusion-weighted probabilistic tractography. _bioRxiv._ doi: [10.1101/2021.03.05.434061v1](https://doi.org/10.1101/2021.03.05.434061)
