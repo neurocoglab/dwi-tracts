@@ -1527,12 +1527,12 @@ class DwiTractsGlm:
     # op:          The aggregation to perform; one of "max" or "mean"
     # pthres:      The p-value threshold to apply (default=0.05)
     # suffix:      Suffix indicating the statistical approach used to obtain the t-statistics
-    #               (default = '-perm')
+    #               (default = '-rft')
     # intersects:  Path to image file specifying a mask; only tracts that intersect this mask
     #               will be included in the aggregate image. Can be None. (default=None)
     # verbose:     Whether to print progress to screen
     #
-    def aggregate_stats( self, op='max', pthres=0.05, suffix='-perm', intersects=None, verbose=False, clobber=False ):
+    def aggregate_stats( self, op='max', pthres=0.05, suffix='-rft', intersects=None, verbose=False, clobber=False ):
         
         params_glm = self.params['glm']
         V_mask = None
