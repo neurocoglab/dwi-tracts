@@ -43,6 +43,9 @@ These need to be installed separately:
 * [seaborn](https://anaconda.org/anaconda/seaborn)
 
 # Getting started
+
+A Wiki guide is [now available](https://github.com/neurocoglab/dwi-tracts/wiki).
+
 Two [Jupyter notebooks](https://jupyter.org/) are provided to demonstrate the use of the software, using three participants from the [Enhanced NKI Rockland](http://fcon_1000.projects.nitrc.org/indi/enhanced/) sample as a demo dataset, available [here](https://github.com/neurocoglab/dwi-tracts-data) (see the "project" folder for examples of the required parameters, specified as JSON files). Run times are dependent on the input size; the longer steps (typically >30 min) are indicated below:
 
 * **Compute Tract Metrics**: This runs all the steps after preprocessing has been performed, including:
@@ -75,10 +78,14 @@ which will start the notebook in your web browser. You can then sequentially run
 This also currently serves as a test function for the correct installation of the software.
 
 # Documentation
-Development of a detailed API, including parameter specifications for all functions, is in expected by the end of March, 2021. A Wiki guide is also in the works.
+Development of a detailed API, including parameter specifications for all functions, is in expected by the end of March, 2021. 
 
 # Citation
 
-If you use this code in your research, please consider citing the preprint:
+If you use this code in your research, please consider citing the article:
 
-Reid AT, Camilleri JA, Hoffstaedter F, Eickhoff SB (2021). Tract-specific statistics based on diffusion-weighted probabilistic tractography. bioRxiv. doi: [10.1101/2021.03.05.434061v1](https://doi.org/10.1101/2021.03.05.434061)
+Reid AT, Camilleri JA, Hoffstaedter F, Eickhoff SB (2022). Tract-specific statistics based on diffusion-weighted probabilistic tractography. _Commun Biol._ 5:138. doi: [10.1038/s42003-022-03073-w](http://dx.doi.org/10.1038/s42003-022-03073-w)
+
+Earlier preprint is available here:
+
+Reid AT, Camilleri JA, Hoffstaedter F, Eickhoff SB (2021). Tract-specific statistics based on diffusion-weighted probabilistic tractography. _bioRxiv._ doi: [10.1101/2021.03.05.434061v1](https://doi.org/10.1101/2021.03.05.434061)
