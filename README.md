@@ -93,7 +93,9 @@ It is recommended that you make a copy of these notebooks, and copy the "data" a
 
 To run a notebook, navigate to the source folder using a terminal window, and type:
 
-`jupyter notebook`
+```console
+jupyter notebook
+```
 
 which will start the notebook in your web browser. You can then sequentially run the cells in the notebook. Use the `verbose` argument to most functions in order to get detailed console feedback.
 
