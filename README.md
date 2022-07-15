@@ -48,11 +48,21 @@ These need to be installed separately:
 
 If you are using Anaconda, you can simply things by using [environments](https://kiwidamien.github.io/save-the-environment-with-conda-and-how-to-let-others-run-your-programs.html):
 
-```
+```console
 conda env create --file environment.yaml
 ```
 
-You will still need to install rft1d in this environment, however. 
+Then activate the environment:
+
+```console
+conda activate dwitracts
+```
+
+You will still need to install rft1d in this environment, however. Clone the repository, cd to its main directory, and while the above environment is activated, run:
+
+```console
+python setup.py install
+```
 
 # Getting started
 
