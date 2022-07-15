@@ -38,6 +38,7 @@ These dependencies are included in [Anaconda](https://docs.anaconda.com/anaconda
 
 These need to be installed separately:
 * [nibabel](https://anaconda.org/conda-forge/nibabel)
+* [nilearn](https://anaconda.org/conda-forge/nilearn)
 * [statsmodels](https://anaconda.org/anaconda/statsmodels)
 * [tqdm](https://anaconda.org/conda-forge/tqdm)
 * [seaborn](https://anaconda.org/anaconda/seaborn)
