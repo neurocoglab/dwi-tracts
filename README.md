@@ -35,6 +35,7 @@ These dependencies are included in [Anaconda](https://docs.anaconda.com/anaconda
 * [matplotlib](https://anaconda.org/conda-forge/matplotlib)
 * [numpy](https://anaconda.org/anaconda/numpy)
 * [scipy](https://anaconda.org/anaconda/scipy)
+* [ipython](https://anaconda.org/anaconda/ipython)
 
 These need to be installed separately:
 * [nibabel](https://anaconda.org/conda-forge/nibabel)
