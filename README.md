@@ -46,6 +46,14 @@ These need to be installed separately:
 * [seaborn](https://anaconda.org/anaconda/seaborn)
 * [spm1d](https://anaconda.org/conda-forge/spm1d)
 
+If you are using Anaconda, you can simply things by using [environments](https://kiwidamien.github.io/save-the-environment-with-conda-and-how-to-let-others-run-your-programs.html):
+
+```
+conda env create --file environment.yaml
+```
+
+You will still need to install rft1d in this environment, however. 
+
 # Getting started
 
 A Wiki guide is [now available](https://github.com/neurocoglab/dwi-tracts/wiki).
