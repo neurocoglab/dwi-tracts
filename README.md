@@ -42,6 +42,7 @@ These need to be installed separately:
 * [statsmodels](https://anaconda.org/anaconda/statsmodels)
 * [tqdm](https://anaconda.org/conda-forge/tqdm)
 * [seaborn](https://anaconda.org/anaconda/seaborn)
+* [spm1d](https://anaconda.org/conda-forge/spm1d)
 
 # Getting started
 
