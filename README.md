@@ -46,6 +46,24 @@ These need to be installed separately:
 * [seaborn](https://anaconda.org/anaconda/seaborn)
 * [spm1d](https://anaconda.org/conda-forge/spm1d)
 
+If you are using Anaconda, you can simplify things by using [environments](https://kiwidamien.github.io/save-the-environment-with-conda-and-how-to-let-others-run-your-programs.html):
+
+```console
+conda env create --file environment.yaml
+```
+
+Then activate the environment:
+
+```console
+conda activate dwitracts
+```
+
+You will still need to install rft1d in this environment, however. Clone the repository, cd to its main directory, and while the above environment is activated, run:
+
+```console
+python setup.py install
+```
+
 # Getting started
 
 A Wiki guide is [now available](https://github.com/neurocoglab/dwi-tracts/wiki).
@@ -75,7 +93,9 @@ It is recommended that you make a copy of these notebooks, and copy the "data" a
 
 To run a notebook, navigate to the source folder using a terminal window, and type:
 
-`jupyter notebook`
+```console
+jupyter notebook
+```
 
 which will start the notebook in your web browser. You can then sequentially run the cells in the notebook. Use the `verbose` argument to most functions in order to get detailed console feedback.
 
