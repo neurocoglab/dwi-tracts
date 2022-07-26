@@ -225,6 +225,7 @@ class DwiTracts:
             prefix_sub = '{0}{1}'.format(params_gen['prefix'], subject)
             if verbose:
                 print('  Processing subject: {0} ({1} of {2})'.format(subject, s, len(self.subjects)))
+                
             subject_dir = os.path.join(self.project_dir, params_gen['deriv_dir'], prefix_sub, \
                                        params_gen['sub_dirs'], params_gen['dwi_dir'], \
                                        'probtrackX', params_gen['network_name'])
