@@ -47,7 +47,11 @@ def process_subject(subject, config):
         print('Subject {0} has no data.'.format(subject))
         return
 
-    output_dir = '{0}/{1}/dwi'.format(deriv_dir, subject)
+    # Output is subject-first
+    session = config_gen['session']
+    if len(session) > 0:
+        session = '{0}/'.format(session)
+    output_dir = '{0}/{1}/{2}dwi'.format(deriv_dir, subject, session)
     
     flag_file = '{0}/{1}/preproc.done'.format(output_dir, config_gen['flags_dir'])
     if os.path.isfile(flag_file):

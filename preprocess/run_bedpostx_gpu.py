@@ -36,13 +36,20 @@ def process_subject(subject, config):
     fsl_bin = config_gen['fsl_bin']
     
     subj = '{0}{1}'.format(config_gen['prefix'], subject)
-    input_dir = '{0}/{1}/dwi'.format(convert_dir, subject);
+    if config_gen['dir_format'] == 'subject_first':
+    	input_dir = '{0}/{1}/dwi'.format(convert_dir, subject)
+    else:
+    	input_dir = '{0}/dwi/{1}'.format(convert_dir, subject);
    
     if not input_dir:
         print('Subject {0} has no data.'.format(subject))
         return
 
-    output_dir = '{0}/{1}'.format(deriv_dir, subject)
+    # Output is subject-first
+    session = config_gen['session']
+    if len(session) > 0:
+        session = '{0}/'.format(session)
+    output_dir = '{0}/{1}/{2}dwi'.format(deriv_dir, subject, session)
     
     flag_file = '{0}/{1}/preproc.done'.format(output_dir, config_gen['flags_dir'])
     if not os.path.isfile(flag_file):

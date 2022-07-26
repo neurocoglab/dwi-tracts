@@ -100,8 +100,12 @@ for subject in subjects:
         print('Subject {0}...'.format(subject))
 
     # Subject-specific paths
-    subj_dir = '{0}/{1}{2}/{3}/dwi' \
-                        .format(deriv_dir, config_gen['prefix'], subject, config_gen['session'])
+    # Output is subject-first
+    session = config_gen['session']
+    if len(session) > 0:
+        session = '{0}/'.format(session)
+    subj_dir = '{0}/{1}{2}/{3}dwi' \
+                        .format(deriv_dir, config_gen['prefix'], subject, session)
     probtrackx_dir = '{0}/probtrackX/{1}'.format(subj_dir, config_ptx['network_name'])
 
     # Remove existing directory if clobber
