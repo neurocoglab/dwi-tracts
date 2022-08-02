@@ -33,7 +33,7 @@ class DwiTracts:
         self.source_dir = params_gen['source_dir']
         self.project_dir = os.path.join(self.source_dir, params_gen['project_dir'])
         self.tracts_dir = os.path.join(self.project_dir, params_gen['tracts_dir'], params_gen['network_name'])
-        self.rois_dir = os.path.join(self.source_dir, params_gen['rois_dir'], params_gen['network_name'])
+        self.rois_dir = os.path.join(self.source_dir, params_gen['rois_dir'])
 
         if params_gen['debug']:
             self.debug_dir = os.path.join(self.tracts_dir, 'debug')
@@ -205,8 +205,8 @@ class DwiTracts:
         params_gen = self.params['general']
         output_list = '{0}/subjects_avr_{1}.list'.format(self.tracts_dir, params_gen['network_name'])
         if os.path.isfile( output_list ) and not clobber:
-            print(' Output file {0} exists, use "clobber=True" to overwrite!'.format(output_list) )
-            return False
+            print(' Output file {0} exists, use "clobber=True" to overwrite! Skipping.'.format(output_list) )
+            return True
 
         params_avt = self.params['average_tracts']
         fwhm = params_avt['fwhm']
