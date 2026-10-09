@@ -1485,7 +1485,7 @@ def process_tsa_subject( subject, my_dwi, verbose=False, debug=False ):
                         bb   = b_d
                         dd   = diff_d[vv]
                         xTv  = np.matmul(v_d[vv,:],x_d.T)
-                        xx   = np.exp(-(((bb*dd) * xTv)**2))
+                        xx   = np.exp(-((bb*dd) * xTv**2))
                         # z-score
 #                         xx   = stats.zscore(xx, nan_policy='raise')
                         xx   = sm.add_constant(xx, has_constant='add')
