@@ -3,37 +3,33 @@
 import statsmodels.api as sm
 import math
 import nibabel as nib
-from nilearn import image, masking
+from nilearn import image
 import scipy.stats as stats
 import numpy as np
-import json
-import csv
 import os
 import glob
 from . import utils
+from .layout import DwiTractsLayout, fsl_tool
 import shutil
 import time
-# from tqdm import tnrange, tqdm_notebook, tqdm
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 import pandas as pd
 
 class DwiTracts:
     
-    def __init__(self, params):
+    def __init__(self, params, layout=None):
+        # `layout` says where each unit's inputs and outputs are (see layout.py); without one,
+        # dwi-tracts' own folders, from params['general'].
         self.params = params
+        self.layout = layout if layout is not None else DwiTractsLayout(params)
         self.is_init = False
-        
-    def _json_object_hook(d): return namedtuple('X', d.keys())(*d.values())
-    def json2obj(data): return json.loads(data, object_hook=_json_object_hook)
-        
+
     # Initialise this object with its current parameters
     def initialize(self):
         
         params_gen = self.params['general']
-        self.source_dir = params_gen['source_dir']
-        self.project_dir = os.path.join(self.source_dir, params_gen['project_dir'])
-        self.tracts_dir = os.path.join(self.project_dir, params_gen['tracts_dir'], params_gen['network_name'])
-        self.rois_dir = os.path.join(self.source_dir, params_gen['rois_dir'])
+        self.tracts_dir = str(self.layout.group_dir())
+        self.rois_dir = str(self.layout.roi_dir())
 
         if params_gen['debug']:
             self.debug_dir = os.path.join(self.tracts_dir, 'debug')
@@ -42,7 +38,7 @@ class DwiTracts:
                 os.makedirs(self.debug_dir)
 
         if not os.path.isdir(self.tracts_dir):
-            os.makedirs(self.tracts_dir)        
+            os.makedirs(self.tracts_dir)
 
         self.avr_dir = os.path.join(self.tracts_dir, 'average')
         if not os.path.isdir(self.avr_dir):
@@ -76,19 +72,10 @@ class DwiTracts:
             os.makedirs(self.debug_dir)
             
         # Subjects
-        subjects = [];
-        with open(params_gen['subjects_file']) as subj_file:
-            reader = csv.reader(subj_file)
-            for row in reader:
-                subjects.append(row[0])
-        self.subjects = sorted(subjects)
+        self.subjects = self.layout.units()
         
         # ROIs
-        rois = []
-        with open(params_gen['rois_list'],'r') as roi_file:
-            reader = csv.reader(roi_file)
-            for row in reader:
-                rois.append(row[0])
+        rois = self.layout.roi_names()
         
         # Determine proper suffix
         roi_suffix = 'nii'
@@ -222,13 +209,10 @@ class DwiTracts:
         
         s = 1
         for subject in tqdm(self.subjects, 'Progress'):
-            prefix_sub = '{0}{1}'.format(params_gen['prefix'], subject)
             if verbose:
                 print('  Processing subject: {0} ({1} of {2})'.format(subject, s, len(self.subjects)))
                 
-            subject_dir = os.path.join(self.project_dir, params_gen['deriv_dir'], prefix_sub, \
-                                       params_gen['sub_dirs'], params_gen['dwi_dir'], \
-                                       'probtrackX', params_gen['network_name'])
+            subject_dir = str(self.layout.tracking_dir(subject))
             passed = False
 
             for roi_i in self.roi_pairs:
@@ -387,7 +371,7 @@ class DwiTracts:
 
                 tract_file = '{0}/avr_{1}_tract_counts_{2}_{3}.nii.gz'.format(self.avr_dir, avr_type, roi_a, roi_b)
                 if not os.path.isfile(tract_file):
-                    tract_file = '{0}/avr_{1}_tract_counts_{1}_{2}.nii.gz'.format(self.avr_dir, avr_type, roi_b, roi_a)
+                    tract_file = '{0}/avr_{1}_tract_counts_{2}_{3}.nii.gz'.format(self.avr_dir, avr_type, roi_b, roi_a)
 
                 if not os.path.isfile(tract_file):
                     if verbose:
@@ -396,7 +380,7 @@ class DwiTracts:
                     # Load and threshold average tract
                     V_tract = nib.load(tract_file).get_fdata()
 
-                    V_mask = np.greater(V_tract, threshold).astype(np.float)
+                    V_mask = np.greater(V_tract, threshold).astype(float)
                     V_tract = np.multiply(V_mask, V_tract)
                     if debug:
                         dfile = '{0}/mask_dist_{1}_{2}.nii.gz'.format(self.debug_dir, roi_a, roi_b)
@@ -584,7 +568,7 @@ class DwiTracts:
                     # Compute polylines + gaussians in both directions
                     for dist_file, suffix, tract_name in zip(dist_files, suffixes, tract_names):
 
-                        if suffix is 'ab':
+                        if suffix == 'ab':
                             V_target_1 = V_target_a
                             V_target_2 = V_target_b
                         else:
@@ -1064,12 +1048,9 @@ class DwiTracts:
 
                     # For each subject, read local direction vectors
                     for subject in tqdm(self.subjects, desc='{0}'.format(tract_name)):
-                        prefix_sub = '{0}{1}'.format(params_gen['prefix'], subject)
 
                         # AB orientations
-                        subject_dir = os.path.join(self.project_dir, params_gen['deriv_dir'], prefix_sub, \
-                                                   params_gen['sub_dirs'], params_gen['dwi_dir'], \
-                                                   'probtrackX', params_gen['network_name'], roi_a)
+                        subject_dir = os.path.join(self.layout.tracking_dir(subject), roi_a)
                         avdir_file = '{0}/target_localdir_{1}.nii.gz'.format(subject_dir, roi_b)
 
                         V_img3 = nib.load(avdir_file)
@@ -1085,9 +1066,7 @@ class DwiTracts:
                         V_avdir = np.add(V_avdir, V_dir)
 
                         # BA orientations
-                        subject_dir = os.path.join(self.project_dir, params_gen['deriv_dir'], prefix_sub, \
-                                                   params_gen['sub_dirs'], params_gen['dwi_dir'], \
-                                                   'probtrackX', params_gen['network_name'], roi_b)
+                        subject_dir = os.path.join(self.layout.tracking_dir(subject), roi_b)
                         avdir_file = '{0}/target_localdir_{1}.nii.gz'.format(subject_dir, roi_a)
 
                         V_img3 = nib.load(avdir_file)
@@ -1167,11 +1146,7 @@ class DwiTracts:
             V_sum = None
             
             for subject in self.subjects:
-                prefix_sub = '{0}{1}'.format(params_gen['prefix'], subject)
-                subj_dir = os.path.join(self.project_dir, params_gen['deriv_dir'], prefix_sub, \
-                                                          params_gen['sub_dirs'])
-                subj_dir = '{0}/dwi/{1}/{2}'.format(subj_dir, params_regress['regress_dir'], \
-                                                              params_gen['network_name'])
+                subj_dir = str(self.layout.regress_dir(subject))
                 beta_file = '{0}/betas_mni_sm_{1}um_{2}.nii.gz' \
                                   .format(subj_dir, int(1000.0*params_regress['beta_sm_fwhm']), tract)
                 
@@ -1231,11 +1206,7 @@ class DwiTracts:
         V_betas = np.zeros((N_sub, idx_tract.size))
         # Get betas for each subject
         for subject, i in zip(self.subjects, range(0,N_sub)):
-            prefix_sub = '{0}{1}'.format(params_gen['prefix'], subject)
-            subject_dir = os.path.join(self.project_dir, params_gen['deriv_dir'], prefix_sub, \
-                                       params_gen['sub_dirs'])
-            subj_output_dir = '{0}/dwi/{1}/{2}'.format(subject_dir, params_regress['regress_dir'], \
-                                                       params_gen['network_name'])
+            subj_output_dir = str(self.layout.regress_dir(subject))
             beta_file = '{0}/betas_mni_sm_{1}um_{2}.nii.gz' \
                                   .format(subj_output_dir, int(1000.0*params_regress['beta_sm_fwhm']), tract_name)
 
@@ -1267,27 +1238,18 @@ def process_tsa_subject( subject, my_dwi, verbose=False, debug=False ):
     if not os.path.isdir(tmp_dir):
         os.makedirs(tmp_dir)
         
-    source_dir = params_gen['source_dir']
-   
-    with open(params_gen['preproc_config'], 'r') as myfile:
-        json_string = myfile.read()
-                     
-    params_preproc = json.loads(json_string)
-    params_bpx = params_preproc['bedpostx']
-    params_ptx = params_preproc['probtrackx']
     params_regress = my_dwi.params['dwi_regressions']
     tract_thres = my_dwi.params['average_directions']['threshold'] # Threshold must match
 
-    fsl_root = params_regress['fsl_root']
-    fsl_maths = '{0}/bin/fslmaths'.format(fsl_root)
-    fsl_vecreg = '{0}/bin/vecreg'.format(fsl_root)
-    fsl_applywarp = '{0}/bin/applywarp'.format(fsl_root)
-    fsl_eddy = '{0}/bin/eddy_correct'.format(fsl_root)
-    
+    # FSL programs from PATH unless fsl_root is set; the template from the layout
+    fsl_root = params_regress.get('fsl_root') or None
+    fsl_maths = fsl_tool('fslmaths', fsl_root)
+    fsl_vecreg = fsl_tool('vecreg', fsl_root)
+    fsl_applywarp = fsl_tool('applywarp', fsl_root)
+
     use_norm = params_regress['use_normalized']
 
-    fa_img = params_regress['fa_img']
-    standard_img = 'utils/{0}'.format(params_regress['standard_img'])
+    standard_img = str(my_dwi.layout.template_image())
 
     # Get ROIs and targets
     tract_names = my_dwi.tracts_final_bidir
@@ -1340,19 +1302,14 @@ def process_tsa_subject( subject, my_dwi, verbose=False, debug=False ):
 #             rois_a.append(roi_a)
 #             rois_b.append(roi_b)
 
-    prefix_sub = '{0}{1}'.format(params_gen['prefix'], subject)
-    subject_dir = os.path.join(my_dwi.project_dir, params_gen['deriv_dir'], prefix_sub, params_gen['sub_dirs'])
-
-    dwi_dir = os.path.join(subject_dir, params_gen['dwi_dir'])
-    ptx_dir = os.path.join(dwi_dir,'probtrackX', params_gen['network_name'])
-
-    bet_file = '{0}/{1}_{2}_dwi_bet.nii.gz'.format(dwi_dir, prefix_sub, params_gen['sub_dirs'])
-    warp_file = '{0}/reg3G/Mean3G_warp2FA.nii.gz'.format(dwi_dir)
-    invwarp_file = '{0}/reg3G/FA_warp2Mean3G.nii.gz'.format(dwi_dir)
-    bvec_file = '{0}/bedpostX/bvecs'.format(dwi_dir)
-    bval_file = '{0}/bedpostX/bvals'.format(dwi_dir)
-    fa_file = '{0}/dti_FA.nii.gz'.format(dwi_dir)
-    diff_file = '{0}/bedpostX/mean_dsamples.nii.gz'.format(dwi_dir)
+    layout = my_dwi.layout
+    bet_file = str(layout.dwi(subject))
+    warp_file = str(layout.warp_from_template(subject))
+    invwarp_file = str(layout.warp_to_template(subject))
+    bvec_file = str(layout.bvecs(subject))
+    bval_file = str(layout.bvals(subject))
+    fa_file = str(layout.fa(subject))
+    diff_file = str(layout.diffusivity(subject))
     
     # Ensure all the required files exist
     if not os.path.isfile(warp_file) or \
@@ -1367,11 +1324,11 @@ def process_tsa_subject( subject, my_dwi, verbose=False, debug=False ):
         return -1
     
     # Create output directory
-    subj_output_dir = '{0}/dwi/{1}/{2}'.format(subject_dir, params_regress['regress_dir'], params_gen['network_name'])
+    subj_output_dir = str(layout.regress_dir(subject))
     if os.path.isdir(subj_output_dir):
         if not params_regress['force_regress']:
-            img_files = glob.glob('*.nii.gz')
-            if len(img_files) >= len(tract_name):
+            img_files = glob.glob(os.path.join(subj_output_dir, 'betas_mni_sm_*.nii.gz'))
+            if len(img_files) >= len(tract_names):
                 if verbose:
                     print('  * Warning: Output already exists for subject {0}. Skipping.'.format(subject))
                 return 0
@@ -1401,13 +1358,13 @@ def process_tsa_subject( subject, my_dwi, verbose=False, debug=False ):
     N_img = bp[bp==True].size
     
     # Load diffusion-weighted image
-    V_bet = nib.load(bet_file).get_data()
+    V_bet = nib.load(bet_file).get_fdata()
     V_b0 = np.mean(V_bet[:,:,:,b0],3)
     V_bet = V_bet[:,:,:,bp]
     
     # Load mean diffusivity image
     V_img = nib.load(diff_file)
-    V_diff = V_img.get_data()
+    V_diff = V_img.get_fdata()
     
     failure_count = 0
     
@@ -1469,8 +1426,8 @@ def process_tsa_subject( subject, my_dwi, verbose=False, debug=False ):
     
             if success:
                 # Load warped average vectors
-                V_tract = nib.load(tract_file).get_data()
-                V_avrdir = nib.load(avrdir_file).get_data()
+                V_tract = nib.load(tract_file).get_fdata()
+                V_avrdir = nib.load(avrdir_file).get_fdata()
                 
                 V_beta = np.zeros(V_tract.shape, float)
                 V_tvals = np.zeros(V_tract.shape, float)
