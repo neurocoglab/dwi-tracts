@@ -148,7 +148,7 @@ def smooth_volume(volume, V_img, fwhm):
     
     img = nib.Nifti1Image(volume, V_img.affine, V_img.header)
     V = image.smooth_img(img, fwhm)
-    return V.get_data()
+    return np.asanyarray(V.dataobj)  # get_data() is gone from nibabel 5; same values and type
     
 
 # Writes a polyline to file in ModelGUI poly3d format
@@ -399,7 +399,11 @@ def read_bvecs( filename ):
 def run_fsl(cmd, dryrun=False):
     if dryrun:
         return ''
-    cmd = '{0};{1}'.format('. /usr/local/fsl/etc/fslconf/fsl.sh', cmd)
+    # Source FSL's setup if it is where FSLDIR says. Sourcing a missing file (the old fixed
+    # /usr/local/fsl path) stops sh before the command runs, so nothing ran without it.
+    fsl_setup = os.path.join(os.environ.get('FSLDIR', '/usr/local/fsl'), 'etc', 'fslconf', 'fsl.sh')
+    if os.path.isfile(fsl_setup):
+        cmd = '. {0}; {1}'.format(fsl_setup, cmd)
     sp = Popen(cmd, shell=True, stderr=subprocess.PIPE)
     out, err = sp.communicate()
     return err
