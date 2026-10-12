@@ -17,3 +17,7 @@ dwitracts/__pycache__/plot.cpython-36.pyc
 dwitracts/__pycache__/plot.cpython-37.pyc
 dwitracts/__pycache__/utils.cpython-36.pyc
 dwitracts/__pycache__/utils.cpython-37.pyc
+__pycache__/
+*.egg-info/
+build/
+.venv/

@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dwitracts"
+version = "0.2.0.dev0"
+description = "Tract-specific anisotropy (TSA) from probabilistic tractography of diffusion-weighted MRI"
+readme = "README.md"
+license = {text = "GPL-3.0"}
+requires-python = ">=3.10"
+# FSL (fslmaths, vecreg, applywarp, probtrackx2) must also be installed; see README.md.
+# rft1d: upstream 0.2.8 runs on current Python and numpy, so the Python 3 fork is no longer needed.
+dependencies = [
+    "numpy",
+    "scipy",
+    "nibabel",
+    "nilearn",
+    "pandas",
+    "statsmodels",
+    "matplotlib",
+    "seaborn",
+    "tqdm",
+    "rft1d>=0.2.8",
+]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[project.urls]
+Homepage = "https://github.com/neurocoglab/dwi-tracts"
+
+[tool.setuptools]
+packages = ["dwitracts"]
