@@ -17,10 +17,11 @@ It runs the steps of `compute_tract_metrics.py` up to the mean TSA images:
 
 It then compares every output file. Images may differ by at most 1e-4 of the original's largest absolute value. Text files must be identical.
 
-`patch_orig.py` makes two changes to the exported original before it runs, so that the comparison shows only differences nobody intended:
+`patch_orig.py` makes three changes to the exported original before it runs, so that the comparison shows only differences nobody intended:
 
 - `utils.run_fsl` sources FSL's setup from `$FSLDIR` instead of the fixed `/usr/local/fsl`. Without this, no FSL command runs on a machine without that path.
 - The corrected beta regression equation. It changes the TSA betas on purpose.
+- A stable sort where the core tracts choose among tied voxels. With numpy's default sort, the choice depends on the numpy version, so the original's own results vary with its environment.
 
 ## Setup (once)
 

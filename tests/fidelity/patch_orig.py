@@ -1,4 +1,4 @@
-"""Apply to an exported copy of the original the two changes the comparison should not measure.
+"""Apply to an exported copy of the original the changes the comparison should not measure.
 
     python patch_orig.py ORIG_DIR
 
@@ -6,6 +6,9 @@
   file, no FSL command runs at all (see the commit that fixed it on this branch).
 - The corrected beta regression equation (exp(-b d (x.v)^2)): it changes the TSA betas on
   purpose, so both sides use it and the comparison shows only unintended differences.
+- A stable sort where the core tracts pick the strongest voxel at each distance. With numpy's
+  default sort, which of several tied voxels comes first depends on the numpy version (1.21 and
+  2.x differ), so the original's own results change with its environment.
 """
 
 import sys
@@ -21,6 +24,9 @@ PATCHES = {
     "dwitracts/main.py": [(
         "xx   = np.exp(-(((bb*dd) * xTv)**2))",
         "xx   = np.exp(-((bb*dd) * xTv**2))",
+    ), (
+        "sidx = T.argsort()[::-1]",
+        "sidx = T.argsort(kind='stable')[::-1]",
     )],
 }
 

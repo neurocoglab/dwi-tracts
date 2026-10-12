@@ -732,7 +732,7 @@ def plot_glm_results( params, my_glm, verbose=False, debug=False ):
      
         # Sort variables by X2
         X2 = X[:,i2]
-        idx = np.argsort(X2)
+        idx = np.argsort(X2, kind='stable')
         X2 = X2[idx]
         X1 = X[idx,i1]
         betas_pos = betas_pos[idx]
@@ -829,7 +829,7 @@ def plot_glm_results( params, my_glm, verbose=False, debug=False ):
        
         i1 = factors.index(factor)
         X1 = X[:,i1]
-        idx = np.argsort(X1)
+        idx = np.argsort(X1, kind='stable')
         
         idx_row = 0
         

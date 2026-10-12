@@ -1046,7 +1046,7 @@ class DwiTractsGlm:
                     tcnt_neg.append(tcounts_neg[factor][tract_name])
                     tcnt_abs.append(tcounts_pos[factor][tract_name] + tcounts_neg[factor][tract_name])
 
-                idx = np.argsort(-np.array(tcnt_abs))
+                idx = np.argsort(-np.array(tcnt_abs), kind='stable')
                 tnames = tnames[idx]
 
                 if debug:
@@ -1413,7 +1413,7 @@ class DwiTractsGlm:
                     tcnt_neg.append(tcounts_neg[factor][tract_name])
                     tcnt_abs.append(tcounts_pos[factor][tract_name] + tcounts_neg[factor][tract_name])
 
-                idx = np.argsort(-np.array(tcnt_abs))
+                idx = np.argsort(-np.array(tcnt_abs), kind='stable')
                 tnames = tnames[idx]
 
                 if debug:

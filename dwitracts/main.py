@@ -626,7 +626,7 @@ class DwiTracts:
                                         T_idx = np.equal(V_dist,d)
                                         T = V_tract[T_idx]
                                         T_idx = np.flatnonzero(T_idx)
-                                        sidx = T.argsort()[::-1]
+                                        sidx = T.argsort(kind='stable')[::-1]  # stable: ties in the same order on any numpy
 #                                         print('T({0}): {1}'.format(d, T[sidx[0:10]]))
                                         
                                         idx_max = np.unravel_index(T_idx[sidx[0]], V_tract.shape)
