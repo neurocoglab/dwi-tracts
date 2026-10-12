@@ -37,5 +37,7 @@ for which in ("orig", "new"):
         "clobber": True, "verbose": False, "debug": False,
     })
     cfg["dwi_regressions"].update({"fsl_root": fsl, "regress_dir": f"regress_{which}"})
+    if which == "new":  # the original's trajectory rule: no angle limit, ties in stable index order
+        cfg["gaussians"].update({"tie_break": "stable", "max_seg_angle": None})
     (root / f"config_{which}.json").write_text(json.dumps(cfg, indent=2) + "\n")
 print(f"{len(subjects)} subjects, ROIs {', '.join(rois)}; configs in {root}")

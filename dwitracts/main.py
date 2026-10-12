@@ -452,6 +452,13 @@ class DwiTracts:
         sigma_radial = params_gauss['fwhm_radial'] / (2.0*math.sqrt(2.0*math.log(2.0)))
         threshold = params_gauss['threshold']
         max_seg_length = params_gauss['max_seg_length']
+        # Largest turn between trajectory segments (radians; None for no limit), and how voxels
+        # tied for the highest value at a distance are decided (see utils.choose_trajectory_voxel)
+        max_seg_angle = params_gauss.get('max_seg_angle', 0.8)
+        tie_break = params_gauss.get('tie_break', 'direction')
+        if tie_break not in utils.TIE_BREAKS:
+            print('  **Error: gaussians.tie_break must be one of {0}'.format(', '.join(utils.TIE_BREAKS)))
+            return False
         gauss_max_radius = params_gauss['gauss_max_radius']
         tract_thresh = params_gauss['tract_thresh']
         mask_dilate = params_gauss['mask_dilate']
@@ -604,6 +611,7 @@ class DwiTracts:
                             d_start = round(dist_max/2)
 
                             maxes = np.zeros((dist_max,3), dtype=int)
+                            chosen = np.zeros(dist_max, dtype=bool)
                             M_debug = np.zeros((dist_max,100))
 
                             for k in tqdm(range(0, d_start), desc='Distances'.format(c)):
@@ -626,47 +634,32 @@ class DwiTracts:
                                         T_idx = np.equal(V_dist,d)
                                         T = V_tract[T_idx]
                                         T_idx = np.flatnonzero(T_idx)
-                                        sidx = T.argsort(kind='stable')[::-1]  # stable: ties in the same order on any numpy
-#                                         print('T({0}): {1}'.format(d, T[sidx[0:10]]))
-                                        
-                                        idx_max = np.unravel_index(T_idx[sidx[0]], V_tract.shape)
-#                                         print('{0}: {1}'.format(idx_max, V_tract[idx_max]))
-                                        
+
                                         if debug:
+                                            sidx = T.argsort(kind='stable')[::-1]
                                             row = T[sidx[0:min(99,sidx.size-1)]]
                                             M_debug[d, 0:row.size] = row
 
-                                        if k == 0:
-                                            maxes[d, :] = idx_max
-                                        else:
-                                            if oe == 0:
-                                                idx_prev = maxes[d+1,:]
-                                            else:
-                                                idx_prev = maxes[d-1,:]
+                                        # The previous point on this side of the trajectory, and the one
+                                        # before it, which give its current direction
+                                        prev = prev2 = None
+                                        if k > 0:
+                                            step = 1 if oe == 0 else -1
+                                            prev = maxes[d+step,:]
+                                            if 0 <= d+2*step < dist_max and chosen[d+2*step]:
+                                                prev2 = maxes[d+2*step,:]
 
-                                            # Find maximal value which satisfies length constraint
-                                            r = 0
-                                            is_valid = False
-                                            while not is_valid and r < len(T):
-                                                idx_r = np.unravel_index(T_idx[sidx[r]], V_tract.shape)
-                                                seg_length = math.sqrt((idx_r[0]-idx_prev[0])**2 + \
-                                                                       (idx_r[1]-idx_prev[1])**2 + \
-                                                                       (idx_r[2]-idx_prev[2])**2)
-                                                if seg_length < max_seg_length:
-                                                    maxes[d,:] = idx_r
-                                                    is_valid = True
-                                                r+=1
-                                            if not is_valid:
-                                                idx_r = np.unravel_index(T_idx[sidx[0]], V_tract.shape)
-                                                maxes[d,:] = idx_r
-                                                seg_length = math.sqrt((idx_r[0]-idx_prev[0])**2 + \
-                                                                       (idx_r[1]-idx_prev[1])**2 + \
-                                                                       (idx_r[2]-idx_prev[2])**2)
-                                                # Failed to meet constraint; add anyway but note failure
-                                                constraints_failed += 1
-                                                if params_gen['debug']:
-                                                    print('   * Debug: Constraint fail: len ({0}) > max_len({1})'. \
-                                                          format(seg_length, max_seg_length))
+                                        # Find the maximal value which satisfies the length and angle
+                                        # constraints; failing that, take the maximum anyway but note it
+                                        idx_r, is_valid = utils.choose_trajectory_voxel(T, T_idx, V_tract.shape, prev, prev2,
+                                                                                        max_seg_length, max_seg_angle, tie_break)
+                                        maxes[d,:] = idx_r
+                                        chosen[d] = True
+                                        if not is_valid:
+                                            constraints_failed += 1
+                                            if params_gen['debug']:
+                                                print('   * Debug: Constraint fail at d={0}: max_len {1}, max_angle {2}' \
+                                                      .format(d, max_seg_length, max_seg_angle))
 
                                         # Is this voxel adjacent to target? Then ignore any further distances
                                         if not found_target_a and np.any(np.logical_and(np.equal(V_dist,d), \

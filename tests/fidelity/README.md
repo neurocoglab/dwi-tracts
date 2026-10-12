@@ -15,6 +15,8 @@ It runs the steps of `compute_tract_metrics.py` up to the mean TSA images:
 6. TSA regressions
 7. mean images
 
+This branch runs with `tie_break: "stable"` and no `max_seg_angle`, which is the original's rule for choosing trajectory voxels (its defaults are `"direction"` and a 0.8 rad angle limit).
+
 It then compares every output file. Images may differ by at most 1e-4 of the original's largest absolute value. Text files must be identical.
 
 `patch_orig.py` makes three changes to the exported original before it runs, so that the comparison shows only differences nobody intended:

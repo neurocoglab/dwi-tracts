@@ -107,8 +107,82 @@ def smooth_polyline_ma(vertices, window=5):
         sub = vertices[i0:i1,:]
         p = np.mean(sub, axis=0)
         polyline[i,:] = p
-  
+
     return polyline
+
+
+TIE_BREAKS = ('direction', 'nearest', 'centroid', 'stable')
+
+# Chooses the next point of a core tract trajectory among the voxels at one distance
+# from the seed. Candidates are taken in order of decreasing value; the first value
+# with a candidate that satisfies the constraints wins, and voxels tied at that value
+# are decided by tie_break. If no candidate satisfies the constraints, the voxels
+# with the highest value are decided by tie_break, and the constraints are reported
+# as failed.
+#
+# T:              Values of the candidate voxels
+# T_idx:          Their flat indices into a volume of the given shape
+# shape:          Shape of that volume
+# prev:           The previous point on this side of the trajectory (voxel indices),
+#                 or None at its first point
+# prev2:          The point before prev, or None; prev - prev2 is the trajectory's
+#                 current direction
+# max_seg_length: A step from prev must be shorter than this (voxels)
+# max_seg_angle:  A step must turn less than this from the current direction
+#                 (radians); None for no limit. Applies when prev2 is given.
+# tie_break:      'direction': the step that changes direction least, then the
+#                 nearest to prev; 'nearest': the nearest to prev; 'centroid': the
+#                 nearest to the tied voxels' centroid; 'stable': the highest flat
+#                 index (the order of a stable descending sort). Without prev,
+#                 'direction' and 'nearest' use the centroid. Remaining ties go to
+#                 the highest flat index.
+#
+# Returns:        (voxel indices of the chosen point, whether the constraints held)
+#
+
+def choose_trajectory_voxel(T, T_idx, shape, prev=None, prev2=None, max_seg_length=None,
+                            max_seg_angle=None, tie_break='direction'):
+
+    if tie_break not in TIE_BREAKS:
+        raise ValueError('tie_break must be one of {0}'.format(', '.join(TIE_BREAKS)))
+    T = np.asarray(T)
+    T_idx = np.asarray(T_idx)
+    P = np.column_stack(np.unravel_index(T_idx, shape)).astype(float)
+
+    valid = np.ones(T.size, dtype=bool)
+    cosines = None
+    if prev is not None:
+        prev = np.asarray(prev, dtype=float)
+        steps = P - prev
+        lengths = np.linalg.norm(steps, axis=1)
+        if max_seg_length is not None:
+            valid &= lengths < max_seg_length
+        if prev2 is not None:
+            direction = prev - np.asarray(prev2, dtype=float)
+            norm = np.linalg.norm(direction) * lengths
+            cosines = np.divide(steps @ direction, norm, out=np.ones(T.size), where=norm > 0)
+            cosines = np.round(np.clip(cosines, -1, 1), 9)  # equal angles on the voxel grid tie
+            if max_seg_angle is not None:
+                valid &= np.arccos(cosines) < max_seg_angle
+
+    ok = bool(np.any(valid))
+    pool = valid if ok else np.ones(T.size, dtype=bool)
+    tied = np.flatnonzero(pool & (T == T[pool].max()))
+
+    # Sort keys, most important last (np.lexsort): the highest flat index decides remaining ties
+    keys = [-T_idx[tied]]
+    if tie_break == 'stable':
+        pass
+    elif tie_break == 'centroid' or prev is None:
+        centre = P[tied].mean(axis=0)
+        keys.append(np.sum((P[tied] - centre)**2, axis=1))
+    else:
+        keys.append(np.sum((P[tied] - prev)**2, axis=1))
+        if tie_break == 'direction' and cosines is not None:
+            keys.append(-cosines[tied])
+    best = tied[np.lexsort(keys)[0]]
+
+    return tuple(int(i) for i in P[best]), ok
 
 
 # Converts from voxel to world coordinates, given a (Nibabel) NIFTI1 header object
