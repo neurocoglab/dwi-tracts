@@ -10,7 +10,7 @@ import statsmodels.api as sm
 import scipy.stats as stats
 import statsmodels.stats.multitest as smm
 import shutil
-from tqdm import tnrange, tqdm_notebook, tqdm
+from tqdm import tqdm
 from . import utils
 import rft1d
 import re
@@ -260,7 +260,7 @@ class DwiTractsGlm:
             if verbose:
                 print('Writing results to {0}.'.format(glm_dir))
         
-        for tract_name in tqdm_notebook(self.tract_names, 'Progress'):
+        for tract_name in tqdm(self.tract_names, 'Progress'):
             
             if use_norm:
                 tract_file = '{0}/tract_final_norm_bidir_{1}.nii.gz'.format(self.final_dir, tract_name)
@@ -294,7 +294,7 @@ class DwiTractsGlm:
 
                 i = 0;
                 # Get betas for each subject
-                for subject in tqdm_notebook(self.subjects, desc='Read betas: '):
+                for subject in tqdm(self.subjects, desc='Read betas: '):
                     prefix_sub = '{0}{1}'.format(params_tracts['general']['prefix'], subject)
                     subject_dir = os.path.join(self.project_dir, params_tracts['general']['deriv_dir'], prefix_sub, \
                                                params_tracts['general']['sub_dirs'])
@@ -333,7 +333,7 @@ class DwiTractsGlm:
                         V_sig_fdr[factor] = np.zeros(idx.size)
 
 
-                    for j in tqdm_notebook(range(0, idx.size), desc='{0}: '.format(glm) ):
+                    for j in tqdm(range(0, idx.size), desc='{0}: '.format(glm) ):
                         y = V_betas[:,j]
                         # Remove outliers?
                         if params_glm[glm]['outlier_z'] > 0:
@@ -456,7 +456,7 @@ class DwiTractsGlm:
         nanval = float(params_gen['nan_value'])
         N_sub = len(self.subjects)
 
-        for roi_a in tqdm_notebook(self.rois, 'Progress'):
+        for roi_a in tqdm(self.rois, 'Progress'):
             for roi_b in self.target_rois[roi_a]:
                 
                 tract_name = '{0}_{1}'.format(roi_a,roi_b)
@@ -759,7 +759,7 @@ class DwiTractsGlm:
                 
                 offset = 0
 
-                for tract_name in tqdm_notebook(self.tract_names,'Performing permutation cluster testing'.format(factor)):
+                for tract_name in tqdm(self.tract_names,'Performing permutation cluster testing'.format(factor)):
                     if verbose:
                         print(' {0}'.format(tract_name))
                     stats_file = '{0}/stats_{1}.csv'.format(output_dir, tract_name)
@@ -928,7 +928,7 @@ class DwiTractsGlm:
                 tmean_all_pos[factor] = {}
                 tmean_all_neg[factor] = {}        
                         
-                for tract_name in tqdm_notebook(tracts_found,'Saving results'.format(factor)):
+                for tract_name in tqdm(tracts_found,'Saving results'.format(factor)):
                     
                     pvals = pvals_all[tract_name]
                     tvals = tvals_all[tract_name]
@@ -1073,13 +1073,13 @@ class DwiTractsGlm:
                                         'T_sum': [tsums_pos[factor][tract_name]], \
                                         'T_max': [tmax_pos[factor][tract_name]], \
                                         'T_mean_all': [tmean_all_pos[factor][tract_name]]})
-                    df = df.append(row, ignore_index=True)
+                    df = pd.concat([df, row], ignore_index=True)
                     row = pd.DataFrame({'Factor': [factor_str], 'From': [tract_1], 'To': [tract_2], \
                                         'Direction': 'neg', 'T_count': [tcounts_neg[factor][tract_name]], \
                                         'T_sum': [tsums_neg[factor][tract_name]], \
                                         'T_max': [tmax_neg[factor][tract_name]], \
                                         'T_mean_all': [tmean_all_neg[factor][tract_name]]})
-                    df = df.append(row, ignore_index=True)
+                    df = pd.concat([df, row], ignore_index=True)
 
             # Save results
             df.to_csv('{0}/tcounts-perm.csv'.format(output_dir), index=False)
@@ -1220,7 +1220,7 @@ class DwiTractsGlm:
                 tracts_found = []
                 
                 offset = 0
-                for tract_name in tqdm_notebook(self.tract_names,'Performing cluster inference'.format(factor)):
+                for tract_name in tqdm(self.tract_names,'Performing cluster inference'.format(factor)):
                     stats_file = '{0}/stats_{1}.csv'.format(output_dir, tract_name)
                     resids_file = '{0}/resids_{1}.csv'.format(output_dir, tract_name)
                     if not os.path.isfile(stats_file):
@@ -1295,7 +1295,7 @@ class DwiTractsGlm:
                 tmean_all_pos[factor] = {}
                 tmean_all_neg[factor] = {}        
                         
-                for tract_name in tqdm_notebook(tracts_found,'Saving results'):
+                for tract_name in tqdm(tracts_found,'Saving results'):
                     
                     pvals = pvals_all[tract_name]
                     tvals = tvals_all[tract_name]
@@ -1447,13 +1447,13 @@ class DwiTractsGlm:
                                         'T_sum': [tsums_pos[factor][tract_name]], \
                                         'T_max': [tmax_pos[factor][tract_name]], \
                                         'T_mean_all': [tmean_all_pos[factor][tract_name]]})
-                    df = df.append(row, ignore_index=True)
+                    df = pd.concat([df, row], ignore_index=True)
                     row = pd.DataFrame({'Factor': [factor_str], 'From': [tract_1], 'To': [tract_2], \
                                         'Direction': 'neg', 'T_count': [tcounts_neg[factor][tract_name]], \
                                         'T_sum': [tsums_neg[factor][tract_name]], \
                                         'T_max': [tmax_neg[factor][tract_name]], \
                                         'T_mean_all': [tmean_all_neg[factor][tract_name]]})
-                    df = df.append(row, ignore_index=True)
+                    df = pd.concat([df, row], ignore_index=True)
 
             # Save results
             df.to_csv('{0}/tcounts-rft.csv'.format(output_dir), index=False)

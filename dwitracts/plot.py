@@ -11,7 +11,7 @@ import seaborn as sns
 import matplotlib
 import matplotlib.pylab as plt
 import pandas as pd
-from tqdm import tnrange, tqdm_notebook, tqdm
+from tqdm import tqdm
 from . import utils
 import math
 import traceback
@@ -114,7 +114,7 @@ def plot_tsa_histograms( params, my_dwi, tract_names=None, threshold=0.5, verbos
     means = np.zeros(len(tracts)+1)
     stds = np.zeros(len(tracts)+1)
     
-    for k in tqdm_notebook(range(0,len(tracts)), 'Generating histograms'):
+    for k in tqdm(range(0,len(tracts)), 'Generating histograms'):
         
         tract = tracts[k]
         i = N_roi-ii[k]-2
@@ -188,7 +188,7 @@ def plot_tsa_histograms( params, my_dwi, tract_names=None, threshold=0.5, verbos
     if 'dpi_all' in params:
         dpi = params['dpi_all']
     
-    if img_format is 'svg':
+    if img_format == 'svg':
         plt.rcParams['svg.fonttype'] = 'none'
     plt.savefig( output_file, facecolor=plot_face_clr, transparent=True, dpi=dpi, format=img_format )
     plt.close()
@@ -237,7 +237,7 @@ def plot_distance_traces( params, tract_names, verbose=False ):
     plt.rc('xtick', labelsize=params['xticklabel_font'])
     plt.rc('ytick', labelsize=params['yticklabel_font']) 
     
-    if params['image_format'] is 'svg':
+    if params['image_format'] == 'svg':
         plt.rcParams['svg.fonttype'] = 'none'
 
     metric = params_gen['summary_metric']
@@ -353,7 +353,7 @@ def plot_distance_traces( params, tract_names, verbose=False ):
 #
 def plot_glm_results_all( params, my_glm, verbose=False ):
     
-    for tract in tqdm_notebook(my_glm.tract_names, 'Generating plots'):
+    for tract in tqdm(my_glm.tract_names, 'Generating plots'):
         params['tract_name'] = tract
         
         if not plot_glm_results( params, my_glm, verbose ):
