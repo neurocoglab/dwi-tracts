@@ -20,49 +20,40 @@ The software is organised into several components:
 * **utils**: Utility functions required for the other components
 
 # Installation
-**dwi-tracts** can be cloned from this Github repository. 
+**dwi-tracts** is a Python package (`dwitracts`) for Python 3.10 or later (tested with 3.12). Clone this repository and install it with pip, which also installs the Python dependencies:
 
-The dependencies listed below will also have to be installed on your system. An [Anaconda](https://anaconda.org/anaconda) installation of Python 3.7 is highly recommended, although not necessary.
+```console
+git clone https://github.com/neurocoglab/dwi-tracts.git
+cd dwi-tracts
+pip install -e .
+```
+
+Or install it straight from GitHub (without the notebooks, demo project and templates):
+
+```console
+pip install "dwitracts @ git+https://github.com/neurocoglab/dwi-tracts@develop"
+```
+
+With [conda](https://docs.conda.io/), `conda env create --file environment.yaml` makes a `dwitracts` environment with the package and Jupyter installed. Activate it with `conda activate dwitracts`.
 
 # Dependencies
 
-[FSL software](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation) (preferably v6.0 or later) must be installed on your system, as well as the computing cluster if you are running the preprocessing steps there.
+[FSL software](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation) (preferably v6.0 or later) must be installed on your system, as well as the computing cluster if you are running the preprocessing steps there. FSL programs are found on `PATH`, or under `dwi_regressions.fsl_root` when that is set.
 
-The [rft1d](https://github.com/neurocoglab/rft1d) package is necessary for 1D random field theory functionality. Note, it is forked from the [original repository](https://github.com/0todd0000/rft1d) in order to work with Python 3.
+The Python dependencies (numpy, scipy, nibabel, nilearn, pandas, statsmodels, matplotlib, seaborn, tqdm and [rft1d](https://github.com/0todd0000/rft1d)) are installed by pip. Earlier versions needed a [Python 3 fork of rft1d](https://github.com/neurocoglab/rft1d). The current upstream release (0.2.8) runs on Python 3 and current numpy, so the fork is no longer needed.
 
-These dependencies are included in [Anaconda](https://docs.anaconda.com/anaconda/install/) builds (recommended):
-* [pandas](https://pandas.pydata.org/pandas-docs/stable/getting_started/install.html)
-* [matplotlib](https://anaconda.org/conda-forge/matplotlib)
-* [numpy](https://anaconda.org/anaconda/numpy)
-* [scipy](https://anaconda.org/anaconda/scipy)
-* [ipython](https://anaconda.org/anaconda/ipython)
-* [ipywidgets](https://anaconda.org/anaconda/ipywidgets)
+# Using dwi-tracts from another pipeline
 
-These need to be installed separately:
-* [nibabel](https://anaconda.org/conda-forge/nibabel)
-* [nilearn](https://anaconda.org/conda-forge/nilearn)
-* [statsmodels](https://anaconda.org/anaconda/statsmodels)
-* [tqdm](https://anaconda.org/conda-forge/tqdm)
-* [seaborn](https://anaconda.org/anaconda/seaborn)
-* [spm1d](https://anaconda.org/conda-forge/spm1d)
+By default, `DwiTracts(params)` reads and writes in dwi-tracts' own folder structure, configured by the `general` parameters (see `dwitracts/layout.py`). A pipeline that keeps its outputs elsewhere can pass its own layout: `DwiTracts(params, layout=my_layout)`, where `my_layout` has the methods of `DwiTractsLayout`. Those methods return the paths of the tracking, preprocessed DWI, bvals/bvecs, FA, diffusivity, template warps, the template, and where outputs go.
 
-If you are using Anaconda, you can simplify things by using [environments](https://kiwidamien.github.io/save-the-environment-with-conda-and-how-to-let-others-run-your-programs.html):
+# Tests
 
 ```console
-conda env create --file environment.yaml
+pip install -e ".[test]"
+pytest tests
 ```
 
-Then activate the environment:
-
-```console
-conda activate dwitracts
-```
-
-You will still need to install rft1d in this environment, however. Clone the repository, cd to its main directory, and while the above environment is activated, run:
-
-```console
-python setup.py install
-```
+`tests/fidelity/` compares this version's TSA results with the original (`master`) on the demo data; see its README.
 
 # Getting started
 
