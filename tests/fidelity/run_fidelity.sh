@@ -12,9 +12,10 @@ rm -rf "$root/orig" && mkdir -p "$root/orig"
 git -C "$repo" archive "${ORIG_REF:-master}" | tar -x -C "$root/orig"
 "$python" "$here/patch_orig.py" "$root/orig"
 "$python" "$here/make_configs.py" "$root"
+nki="$root/stage/nki"
+rm -rf "$nki"/tract_stats_{orig,new} "$nki"/deriv/sub-*/ses-DS2/dwi/regress_{orig,new}  # logs append across runs
 (cd "$root/orig" && "$root/env-orig/bin/python" "$here/run_tsa.py" orig "$root/config_orig.json" "$root/orig")
 (cd "$repo" && "$python" "$here/run_tsa.py" new "$root/config_new.json")
-nki="$root/stage/nki"
 args=("$nki/tract_stats_orig/dmn" "$nki/tract_stats_new/dmn")
 for sub in $(cat "$root/subjects.list"); do
   args+=("$nki/deriv/sub-$sub/ses-DS2/dwi/regress_orig/dmn" "$nki/deriv/sub-$sub/ses-DS2/dwi/regress_new/dmn")

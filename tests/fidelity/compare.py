@@ -3,7 +3,7 @@
     python compare.py ORIG_TRACTS_DIR NEW_TRACTS_DIR [ORIG_REGRESS NEW_REGRESS ...]
 
 NIfTI images: same shape, max |difference| (absolute and relative to the original's max |value|);
-text files: identical. Exits 1 if anything is missing or differs beyond the tolerance.
+text files: identical (run logs apart from their start times). Exits 1 if anything is missing or differs beyond the tolerance.
 """
 
 import sys
@@ -34,6 +34,10 @@ for orig_dir, new_dir in pairs:
             worst = max(worst, diff)
             if diff > REL_TOL or not np.array_equal(np.isnan(x), np.isnan(y)):
                 problems.append(f"relative difference {diff:.2e}: {rel}")
+        elif rel.parts[0] == "log":  # run logs: same entries, apart from each run's start time
+            if [l for l in a.read_text().splitlines() if not l.startswith("--New run:")] != \
+               [l for l in b.read_text().splitlines() if not l.startswith("--New run:")]:
+                problems.append(f"log differs: {rel}")
         elif a.read_bytes() != b.read_bytes() and rel.suffix not in (".log",):
             problems.append(f"text differs: {rel}")
     extra = sorted(p.relative_to(new_dir) for p in new_dir.rglob("*") if p.is_file() and not (orig_dir / p.relative_to(new_dir)).exists())
